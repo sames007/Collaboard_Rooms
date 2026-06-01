@@ -2,6 +2,13 @@
     const app = window.Collaboard = window.Collaboard || {};
     const videoGrid = document.getElementById("videoGrid");
     const statusIndicator = document.getElementById("statusIndicator");
+    const supportedVideoEffects = ["none", "blur", "blue-studio", "midnight-grid", "neon-focus", "cool-mono"];
+    const videoEffectClasses = supportedVideoEffects
+        .filter(effect => effect !== "none")
+        .map(effect => `video-effect-${effect}`);
+    const videoFrameClasses = supportedVideoEffects
+        .filter(effect => effect !== "none")
+        .map(effect => `video-frame-${effect}`);
 
     let isRecording = false;
     let mediaRecorder = null;
@@ -10,6 +17,7 @@
     let isScreenSharing = false;
     let originalStream = null;
     let screenStream = null;
+    let currentVideoEffect = "none";
 
     app.getLocalMedia = async function getLocalMedia() {
         const constraints = {
@@ -43,14 +51,17 @@
 
         localVideoAdded = true;
         addVideoTile(app.state.peerId, window.localStream, name, true);
+        applyVideoEffect(app.state.peerId, currentVideoEffect);
     };
 
-    app.addRemoteVideo = function addRemoteVideo(peerId, stream, name) {
+    app.addRemoteVideo = function addRemoteVideo(peerId, stream, name, effect = "none") {
         if (document.getElementById(tileId(peerId))) {
+            applyVideoEffect(peerId, effect);
             return;
         }
 
         addVideoTile(peerId, stream, name, false);
+        applyVideoEffect(peerId, effect);
     };
 
     app.removeVideoContainer = function removeVideoContainer(peerId) {
@@ -96,15 +107,22 @@
         await invokeHub("ToggleCamera", videoTrack.enabled);
     };
 
-    app.toggleVirtualBackground = async function toggleVirtualBackground() {
+    app.setVideoEffect = async function setVideoEffect(effect) {
         if (!window.localStream?.getVideoTracks().length) {
             app.appendSystemMessage?.("No video track is available for background effects.");
             return;
         }
 
-        toggleVideoVirtualBackground(app.state.peerId);
-        document.getElementById("virtualBackgroundButton")?.classList.toggle("is-active");
-        await invokeHub("ToggleVirtualBackground");
+        currentVideoEffect = normalizeVideoEffect(effect);
+        app.state.peerEffects?.set(app.state.peerId, currentVideoEffect);
+        applyVideoEffect(app.state.peerId, currentVideoEffect);
+        updateBackgroundControl();
+        await invokeHub("SetVideoEffect", currentVideoEffect);
+    };
+
+    app.toggleVirtualBackground = async function toggleVirtualBackground() {
+        const nextEffect = currentVideoEffect === "blur" ? "none" : "blur";
+        await app.setVideoEffect(nextEffect);
     };
 
     app.raiseHand = async function raiseHand() {
@@ -137,7 +155,9 @@
     };
 
     app.setVideoTileCameraState = setVideoTileCameraState;
+    app.applyVideoEffect = applyVideoEffect;
     app.toggleVideoVirtualBackground = toggleVideoVirtualBackground;
+    app.getCurrentVideoEffect = () => currentVideoEffect;
     app.showRaisedHand = showRaisedHand;
     app.setScreenShareState = setScreenShareState;
     app.setRecordingState = setRecordingState;
@@ -215,10 +235,59 @@
 
     function toggleVideoVirtualBackground(peerId) {
         const video = document.querySelector(`#${cssEscape(tileId(peerId))} video`);
+        const hasBlur = video?.classList.contains("video-effect-blur") || video?.classList.contains("virtual-bg");
 
-        if (video) {
-            video.classList.toggle("virtual-bg");
+        applyVideoEffect(peerId, hasBlur ? "none" : "blur");
+    }
+
+    function applyVideoEffect(peerId, effect) {
+        const selectedEffect = normalizeVideoEffect(effect);
+        const container = document.getElementById(tileId(peerId));
+        const video = container?.querySelector("video");
+
+        if (!container || !video) {
+            return;
         }
+
+        video.classList.remove("virtual-bg", ...videoEffectClasses);
+        container.classList.remove("has-video-effect", ...videoFrameClasses);
+
+        if (selectedEffect !== "none") {
+            video.classList.add(`video-effect-${selectedEffect}`);
+            container.classList.add("has-video-effect", `video-frame-${selectedEffect}`);
+        }
+
+        if (peerId === app.state.peerId) {
+            currentVideoEffect = selectedEffect;
+            updateBackgroundControl();
+        }
+    }
+
+    function updateBackgroundControl() {
+        const hasEffect = currentVideoEffect !== "none";
+        const backgroundButton = document.getElementById("virtualBackgroundButton");
+
+        backgroundButton?.classList.toggle("is-active", hasEffect);
+        backgroundButton?.setAttribute(
+            "title",
+            hasEffect ? `Background effect: ${formatEffectName(currentVideoEffect)}` : "Choose background effect");
+
+        document.querySelectorAll("[data-background-effect]").forEach(option => {
+            const isActive = option.dataset.backgroundEffect === currentVideoEffect;
+            option.classList.toggle("is-active", isActive);
+            option.setAttribute("aria-checked", String(isActive));
+        });
+    }
+
+    function normalizeVideoEffect(effect) {
+        return supportedVideoEffects.includes(effect) ? effect : "none";
+    }
+
+    function formatEffectName(effect) {
+        return effect
+            .split("-")
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(" ");
     }
 
     function showRaisedHand(peerId) {

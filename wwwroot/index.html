@@ -85,10 +85,39 @@
             <i class="fa-solid fa-display" aria-hidden="true"></i>
             <span id="screenShareBtnLabel">Share</span>
         </button>
-        <button id="virtualBackgroundButton" type="button" title="Toggle virtual background">
-            <i class="fa-solid fa-image" aria-hidden="true"></i>
-            <span>Background</span>
-        </button>
+        <div class="background-control">
+            <button id="virtualBackgroundButton" type="button" title="Choose background effect" aria-haspopup="menu" aria-expanded="false" aria-controls="backgroundMenu">
+                <i class="fa-solid fa-image" aria-hidden="true"></i>
+                <span>Background</span>
+            </button>
+            <div id="backgroundMenu" class="background-menu" role="menu" aria-label="Background effects" hidden>
+                <p class="background-menu-title">Background effects</p>
+                <button class="background-option is-active" type="button" role="menuitemradio" aria-checked="true" data-background-effect="none">
+                    <span class="background-swatch swatch-none" aria-hidden="true"></span>
+                    <span>None</span>
+                </button>
+                <button class="background-option" type="button" role="menuitemradio" aria-checked="false" data-background-effect="blur">
+                    <span class="background-swatch swatch-blur" aria-hidden="true"></span>
+                    <span>Soft blur</span>
+                </button>
+                <button class="background-option" type="button" role="menuitemradio" aria-checked="false" data-background-effect="blue-studio">
+                    <span class="background-swatch swatch-blue-studio" aria-hidden="true"></span>
+                    <span>Blue studio</span>
+                </button>
+                <button class="background-option" type="button" role="menuitemradio" aria-checked="false" data-background-effect="midnight-grid">
+                    <span class="background-swatch swatch-midnight-grid" aria-hidden="true"></span>
+                    <span>Midnight grid</span>
+                </button>
+                <button class="background-option" type="button" role="menuitemradio" aria-checked="false" data-background-effect="neon-focus">
+                    <span class="background-swatch swatch-neon-focus" aria-hidden="true"></span>
+                    <span>Neon focus</span>
+                </button>
+                <button class="background-option" type="button" role="menuitemradio" aria-checked="false" data-background-effect="cool-mono">
+                    <span class="background-swatch swatch-cool-mono" aria-hidden="true"></span>
+                    <span>Cool mono</span>
+                </button>
+            </div>
+        </div>
         <button id="raiseHandButton" type="button" title="Raise hand">
             <i class="fa-solid fa-hand" aria-hidden="true"></i>
             <span>Hand</span>

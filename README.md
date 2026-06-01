@@ -8,7 +8,7 @@ Collaboard Rooms is a real-time video collaboration app built with ASP.NET Core 
 - Peer-to-peer audio and video calls through PeerJS/WebRTC.
 - PeerJS Cloud signaling with the default PeerJS client configuration.
 - Chat with server-side room validation and message length limits.
-- Camera, microphone, screen sharing, virtual background, raise-hand, and local recording controls.
+- Camera, microphone, screen sharing, selectable video background effects, raise-hand, and local recording controls.
 - Embedded whiteboard scoped to the current room.
 - Responsive UI for desktop and mobile-sized screens.
 - Docker-based deployment that works cleanly on Render.
@@ -32,6 +32,27 @@ Open the URL shown by `dotnet run`, then use a room URL such as:
 ```text
 http://localhost:5281/index.html#room=team-demo
 ```
+
+## Testing Calls
+
+Use the same room link for every participant. The app connects people automatically after they enter a display name and allow camera and microphone access.
+
+To test by yourself:
+
+1. Open one room link in a normal browser window.
+2. Open the same link in an incognito/private window, a second browser profile, or a phone.
+3. Join with two different names.
+4. Use the chat, mute, camera, background effects, screen share, raise-hand, recording, and whiteboard controls.
+
+Some browsers only let one tab use the same camera at a time. If the second tab cannot access the camera, use your phone or another browser profile for the most reliable video test.
+
+To test with someone else, send them the same room URL, for example:
+
+```text
+https://collaboard-rooms.onrender.com/index.html#room=resume-demo
+```
+
+If the Render service has been idle, the first load can take 30-60 seconds while the free instance wakes up.
 
 ## Free Deployment Plan
 
@@ -65,6 +86,7 @@ https://your-render-service.onrender.com/index.html#room=team-demo
 - Do not commit service keys, tokens, or deployment credentials.
 - User-provided chat and labels are inserted with text APIs to avoid script injection.
 - The hub derives room, peer, and username state from the connected client instead of trusting client-supplied room values for actions.
+- Video background effect names are validated on the server before they are broadcast to other clients.
 - The app sends security headers, including a content security policy, `nosniff`, frame protection, referrer policy, and browser permission limits.
 - Free PeerJS Cloud is convenient for demos. For a production app, use a private PeerServer with authentication and abuse controls.
 

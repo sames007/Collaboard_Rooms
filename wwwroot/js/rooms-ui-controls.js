@@ -2,6 +2,8 @@
     const app = window.Collaboard = window.Collaboard || {};
     const dropdownPanel = document.getElementById("dropdownPanel");
     const resizeHandle = document.getElementById("panelResizeHandle");
+    const backgroundMenu = document.getElementById("backgroundMenu");
+    const backgroundButton = document.getElementById("virtualBackgroundButton");
 
     let isResizing = false;
     let startX = 0;
@@ -13,9 +15,29 @@
     bindClick("muteButton", () => app.toggleMute());
     bindClick("cameraButton", () => app.toggleCamera());
     bindClick("screenShareButton", () => app.toggleScreenShare());
-    bindClick("virtualBackgroundButton", () => app.toggleVirtualBackground());
+    bindClick("virtualBackgroundButton", toggleBackgroundMenu);
     bindClick("raiseHandButton", () => app.raiseHand());
     bindClick("recordButton", () => app.toggleRecording());
+
+    document.querySelectorAll("[data-background-effect]").forEach(option => {
+        option.addEventListener("click", async event => {
+            event.preventDefault();
+            closeBackgroundMenu();
+            await app.setVideoEffect?.(option.dataset.backgroundEffect || "none");
+        });
+    });
+
+    document.addEventListener("click", event => {
+        if (!(event.target instanceof Element) || !event.target.closest(".background-control")) {
+            closeBackgroundMenu();
+        }
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+            closeBackgroundMenu();
+        }
+    });
 
     resizeHandle.addEventListener("pointerdown", event => {
         isResizing = true;
@@ -67,6 +89,26 @@
         }
     }
 
+    function toggleBackgroundMenu() {
+        if (!backgroundMenu) {
+            app.toggleVirtualBackground?.();
+            return;
+        }
+
+        const isOpen = backgroundMenu.hidden;
+        backgroundMenu.hidden = !isOpen;
+        backgroundButton?.setAttribute("aria-expanded", String(isOpen));
+    }
+
+    function closeBackgroundMenu() {
+        if (!backgroundMenu || backgroundMenu.hidden) {
+            return;
+        }
+
+        backgroundMenu.hidden = true;
+        backgroundButton?.setAttribute("aria-expanded", "false");
+    }
+
     function endResize() {
         if (!isResizing) {
             return;
@@ -85,4 +127,5 @@
 
     app.toggleDropdownPanel = toggleDropdownPanel;
     app.showPanel = showPanel;
+    app.closeBackgroundMenu = closeBackgroundMenu;
 })();

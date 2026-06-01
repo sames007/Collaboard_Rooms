@@ -9,6 +9,7 @@
         peer: null,
         peerId: null,
         peerUsernames: new Map(),
+        peerEffects: new Map(),
         started: false
     };
 
@@ -85,6 +86,7 @@
         state.peer.on("open", async id => {
             state.peerId = id;
             state.peerUsernames.set(id, state.username);
+            state.peerEffects.set(id, app.getCurrentVideoEffect?.() || "none");
 
             const stream = await app.getLocalMedia();
             window.localStream = stream;
@@ -118,18 +120,21 @@
                 }
 
                 state.peerUsernames.set(peerId, username);
+                state.peerEffects.set(peerId, peerInfo.videoEffect ?? peerInfo.VideoEffect ?? "none");
                 app.callPeer(peerId, username);
             });
         });
 
-        connection.on("UserConnected", (peerId, username) => {
+        connection.on("UserConnected", (peerId, username, videoEffect) => {
             if (peerId && peerId !== state.peerId) {
                 state.peerUsernames.set(peerId, username || peerId);
+                state.peerEffects.set(peerId, videoEffect || "none");
             }
         });
 
         connection.on("UserDisconnected", peerId => {
             state.peerUsernames.delete(peerId);
+            state.peerEffects.delete(peerId);
             app.closeMediaConnection?.(peerId);
             app.removeVideoContainer(peerId);
         });
@@ -137,6 +142,10 @@
         connection.on("broadcastMessage", (name, message) => app.appendChatMessage?.(name, message));
         connection.on("CameraToggled", (peerId, isEnabled) => app.setVideoTileCameraState(peerId, isEnabled));
         connection.on("VirtualBackgroundToggled", peerId => app.toggleVideoVirtualBackground(peerId));
+        connection.on("VideoEffectChanged", (peerId, videoEffect) => {
+            state.peerEffects.set(peerId, videoEffect || "none");
+            app.applyVideoEffect?.(peerId, videoEffect);
+        });
         connection.on("UserRaisedHand", peerId => app.showRaisedHand(peerId));
         connection.on("ScreenShareStarted", peerId => app.setScreenShareState(peerId, true));
         connection.on("ScreenShareStopped", peerId => app.setScreenShareState(peerId, false));

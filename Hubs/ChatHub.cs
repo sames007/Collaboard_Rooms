@@ -12,13 +12,24 @@ public sealed class ChatHub : Hub
     private const int MaxPeerIdLength = 128;
     private const int MaxUsernameLength = 40;
     private const int MaxMessageLength = 1_000;
+    private const int MaxVideoEffectLength = 32;
 
     private static readonly object SyncRoot = new();
+    private static readonly HashSet<string> AllowedVideoEffects = new(StringComparer.Ordinal)
+    {
+        "none",
+        "blur",
+        "blue-studio",
+        "midnight-grid",
+        "neon-focus",
+        "cool-mono"
+    };
     private static readonly Dictionary<string, HashSet<string>> RoomPeers = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, string> ConnectionPeerMap = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, string> ConnectionRoomMap = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, string> ConnectionUserMap = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, string> PeerUsernameMap = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, string> PeerVideoEffectMap = new(StringComparer.Ordinal);
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
@@ -60,7 +71,10 @@ public sealed class ChatHub : Hub
             }
 
             existingPeers = peers
-                .Select(id => new PeerInfo(id, PeerUsernameMap.GetValueOrDefault(id, "Guest")))
+                .Select(id => new PeerInfo(
+                    id,
+                    PeerUsernameMap.GetValueOrDefault(id, "Guest"),
+                    PeerVideoEffectMap.GetValueOrDefault(id, "none")))
                 .ToList();
 
             peers.Add(normalizedPeerId);
@@ -68,6 +82,7 @@ public sealed class ChatHub : Hub
             ConnectionRoomMap[Context.ConnectionId] = normalizedRoom;
             ConnectionUserMap[Context.ConnectionId] = normalizedUsername;
             PeerUsernameMap[normalizedPeerId] = normalizedUsername;
+            PeerVideoEffectMap.TryAdd(normalizedPeerId, "none");
         }
 
         if (previousMembership is not null)
@@ -78,7 +93,7 @@ public sealed class ChatHub : Hub
 
         await Groups.AddToGroupAsync(Context.ConnectionId, normalizedRoom);
         await Clients.Caller.SendAsync("ExistingPeers", existingPeers);
-        await Clients.OthersInGroup(normalizedRoom).SendAsync("UserConnected", normalizedPeerId, normalizedUsername);
+        await Clients.OthersInGroup(normalizedRoom).SendAsync("UserConnected", normalizedPeerId, normalizedUsername, "none");
     }
 
     public Task BroadcastMessage(string message)
@@ -99,6 +114,19 @@ public sealed class ChatHub : Hub
     {
         var caller = GetCallerState(Context.ConnectionId);
         return Clients.OthersInGroup(caller.Room).SendAsync("VirtualBackgroundToggled", caller.PeerId);
+    }
+
+    public Task SetVideoEffect(string effect)
+    {
+        var caller = GetCallerState(Context.ConnectionId);
+        var normalizedEffect = NormalizeVideoEffect(effect);
+
+        lock (SyncRoot)
+        {
+            PeerVideoEffectMap[caller.PeerId] = normalizedEffect;
+        }
+
+        return Clients.OthersInGroup(caller.Room).SendAsync("VideoEffectChanged", caller.PeerId, normalizedEffect);
     }
 
     public Task RaiseHand()
@@ -170,6 +198,7 @@ public sealed class ChatHub : Hub
         ConnectionRoomMap.Remove(connectionId);
         ConnectionUserMap.Remove(connectionId);
         PeerUsernameMap.Remove(peerId);
+        PeerVideoEffectMap.Remove(peerId);
 
         return new Departure(room, peerId);
     }
@@ -191,9 +220,21 @@ public sealed class ChatHub : Hub
         return normalized;
     }
 
+    private static string NormalizeVideoEffect(string effect)
+    {
+        var normalized = NormalizeRequired(effect, nameof(effect), MaxVideoEffectLength);
+
+        if (!AllowedVideoEffects.Contains(normalized))
+        {
+            throw new HubException("Unsupported video effect.");
+        }
+
+        return normalized;
+    }
+
     private sealed record CallerState(string Room, string PeerId, string Username);
 
     private sealed record Departure(string Room, string PeerId);
 
-    private sealed record PeerInfo(string PeerId, string Username);
+    private sealed record PeerInfo(string PeerId, string Username, string VideoEffect);
 }

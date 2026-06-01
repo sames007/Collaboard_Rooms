@@ -11,11 +11,16 @@
 
         const stream = window.localStream ?? new MediaStream();
         const call = state.peer.call(remoteId, stream, {
-            metadata: { username: state.username }
+            metadata: {
+                username: state.username,
+                videoEffect: app.getCurrentVideoEffect?.() || "none"
+            }
         });
 
         trackConnection(remoteId, call);
-        call.on("stream", remoteStream => app.addRemoteVideo(remoteId, remoteStream, remoteName));
+        call.on("stream", remoteStream => {
+            app.addRemoteVideo(remoteId, remoteStream, remoteName, state.peerEffects?.get(remoteId) || "none");
+        });
     };
 
     app.handleIncomingCall = function handleIncomingCall(call) {
@@ -25,9 +30,10 @@
             call.peer.slice(0, 8);
 
         state.peerUsernames.set(call.peer, callerName);
+        state.peerEffects.set(call.peer, call.metadata?.videoEffect || "none");
         call.answer(window.localStream ?? new MediaStream());
         trackConnection(call.peer, call);
-        call.on("stream", stream => app.addRemoteVideo(call.peer, stream, callerName));
+        call.on("stream", stream => app.addRemoteVideo(call.peer, stream, callerName, call.metadata?.videoEffect));
     };
 
     app.replaceVideoTrackForPeers = function replaceVideoTrackForPeers(videoTrack) {
