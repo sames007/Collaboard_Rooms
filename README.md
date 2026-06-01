@@ -123,8 +123,8 @@ Useful checks before deploying:
 
 ```powershell
 dotnet build CollaboardRooms.csproj
-dotnet format CollaboardRooms.sln --verify-no-changes
 dotnet list CollaboardRooms.csproj package --vulnerable --include-transitive --source https://api.nuget.org/v3/index.json
+git diff --check
 node --check wwwroot/js/rooms-app.js
 node --check wwwroot/js/rooms-peer-connection.js
 node --check wwwroot/js/rooms-video-controls.js

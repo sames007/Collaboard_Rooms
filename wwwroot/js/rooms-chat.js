@@ -3,6 +3,13 @@
     const chatBox = document.getElementById("chatBox");
     const chatInput = document.getElementById("chatInput");
     const chatForm = document.getElementById("chatForm");
+    const chatSubmitButton = chatForm.querySelector("button[type='submit']");
+
+    updateChatAvailability(Boolean(app.state?.roomJoined));
+
+    window.addEventListener("collaboard:room-ready", event => {
+        updateChatAvailability(Boolean(event.detail?.ready));
+    });
 
     chatForm.addEventListener("submit", event => {
         event.preventDefault();
@@ -38,9 +45,9 @@
         }
 
         const connection = app.state.connection;
-        if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
-            app.notify?.("Chat is still connecting. Try again in a moment.", true);
-            app.appendSystemMessage("Chat is still connecting. Try again in a moment.");
+        if (!app.state.roomJoined || !connection || connection.state !== signalR.HubConnectionState.Connected) {
+            app.notify?.("Chat is still joining the room. Try again in a moment.", true);
+            app.appendSystemMessage("Chat is still joining the room. Try again in a moment.");
             return;
         }
 
@@ -54,5 +61,12 @@
         }
     }
 
+    function updateChatAvailability(isReady) {
+        chatInput.disabled = !isReady;
+        chatSubmitButton.disabled = !isReady;
+        chatInput.placeholder = isReady ? "Type a message..." : "Joining chat...";
+    }
+
+    app.setChatAvailability = updateChatAvailability;
     app.sendChat = sendChat;
 })();

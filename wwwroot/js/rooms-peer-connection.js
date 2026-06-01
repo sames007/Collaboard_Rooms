@@ -1,6 +1,7 @@
 (() => {
     const app = window.Collaboard = window.Collaboard || {};
     const mediaConnections = new Map();
+    let currentOutgoingVideoTrack = null;
 
     app.callPeer = function callPeer(remoteId, remoteName) {
         const { state } = app;
@@ -37,16 +38,10 @@
     };
 
     app.replaceVideoTrackForPeers = function replaceVideoTrackForPeers(videoTrack) {
-        mediaConnections.forEach(call => {
-            const sender = call.peerConnection
-                ?.getSenders()
-                .find(candidate => candidate.track?.kind === "video");
+        currentOutgoingVideoTrack = videoTrack;
 
-            if (sender) {
-                sender.replaceTrack(videoTrack).catch(error => {
-                    console.error("Unable to replace peer video track.", error);
-                });
-            }
+        mediaConnections.forEach(call => {
+            replaceCallVideoTrack(call, videoTrack);
         });
     };
 
@@ -62,6 +57,10 @@
     function trackConnection(peerId, call) {
         mediaConnections.set(peerId, call);
 
+        if (currentOutgoingVideoTrack) {
+            replaceCallVideoTrack(call, currentOutgoingVideoTrack);
+        }
+
         call.on("close", () => {
             mediaConnections.delete(peerId);
             app.removeVideoContainer(peerId);
@@ -72,5 +71,22 @@
             mediaConnections.delete(peerId);
             app.removeVideoContainer(peerId);
         });
+    }
+
+    function replaceCallVideoTrack(call, videoTrack, attempt = 1) {
+        const sender = call.peerConnection
+            ?.getSenders?.()
+            .find(candidate => candidate.track?.kind === "video");
+
+        if (sender) {
+            sender.replaceTrack(videoTrack).catch(error => {
+                console.error("Unable to replace peer video track.", error);
+            });
+            return;
+        }
+
+        if (attempt < 6) {
+            window.setTimeout(() => replaceCallVideoTrack(call, videoTrack, attempt + 1), attempt * 250);
+        }
     }
 })();

@@ -10,6 +10,7 @@
         peerId: null,
         peerUsernames: new Map(),
         peerEffects: new Map(),
+        roomJoined: false,
         started: false
     };
 
@@ -63,7 +64,7 @@
     async function startConnectionWithRetry(attempt = 1) {
         try {
             await state.connection.start();
-            setConnectionStatus("Connected");
+            setConnectionStatus("Opening room...");
             initializePeer();
         } catch (error) {
             console.warn(`SignalR connection attempt ${attempt} failed.`, error);
@@ -87,6 +88,7 @@
             state.peerId = id;
             state.peerUsernames.set(id, state.username);
             state.peerEffects.set(id, app.getCurrentVideoEffect?.() || "none");
+            setConnectionStatus("Joining room...");
 
             const stream = await app.getLocalMedia();
             window.localStream = stream;
@@ -95,8 +97,11 @@
 
             try {
                 await state.connection.invoke("JoinRoom", state.roomName, id, state.username);
+                setRoomJoined(true);
+                setConnectionStatus("Connected");
             } catch (error) {
                 console.error("Unable to join room.", error);
+                setRoomJoined(false);
                 app.appendSystemMessage?.("Unable to join the room. Refresh and try again.");
                 setConnectionStatus("Join failed", true);
             }
@@ -151,15 +156,23 @@
         connection.on("ScreenShareStopped", peerId => app.setScreenShareState(peerId, false));
         connection.on("RecordingToggled", (peerId, isRecording) => app.setRecordingState(peerId, isRecording));
 
-        connection.onreconnecting(() => setConnectionStatus("Reconnecting..."));
+        connection.onreconnecting(() => {
+            setRoomJoined(false);
+            setConnectionStatus("Reconnecting...");
+        });
         connection.onreconnected(async () => {
-            setConnectionStatus("Connected");
+            setConnectionStatus("Rejoining room...");
 
             if (state.peerId) {
                 await connection.invoke("JoinRoom", state.roomName, state.peerId, state.username);
+                setRoomJoined(true);
+                setConnectionStatus("Connected");
             }
         });
-        connection.onclose(() => setConnectionStatus("Disconnected", true));
+        connection.onclose(() => {
+            setRoomJoined(false);
+            setConnectionStatus("Disconnected", true);
+        });
     }
 
     function getRoomName() {
@@ -176,6 +189,14 @@
     function setConnectionStatus(message, isError = false) {
         connectionStatus.textContent = message;
         connectionStatus.classList.toggle("is-error", isError);
+    }
+
+    function setRoomJoined(isJoined) {
+        state.roomJoined = isJoined;
+        app.setChatAvailability?.(isJoined);
+        window.dispatchEvent(new CustomEvent("collaboard:room-ready", {
+            detail: { ready: isJoined }
+        }));
     }
 
     app.setConnectionStatus = setConnectionStatus;

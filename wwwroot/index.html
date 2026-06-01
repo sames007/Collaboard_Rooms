@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
     <script src="https://www.whiteboard.team/dist/api.js"></script>
 
-    <link rel="stylesheet" href="rooms.css" />
+    <link rel="stylesheet" href="rooms.css?v=20260601-chat-bg-fix" />
 </head>
 <body>
     <div id="usernameModal" role="dialog" aria-modal="true" aria-labelledby="usernameTitle">
@@ -31,6 +31,7 @@
             <div class="session-meta">
                 <span>Room <strong id="roomNameDisplay"></strong></span>
                 <span id="connectionStatus" class="connection-status">Not connected</span>
+                <span id="statusIndicator" class="media-status" aria-live="polite">Mic: Off | Camera: Off</span>
             </div>
         </div>
         <button class="icon-button" id="menuToggle" type="button" aria-label="Open collaboration panel" title="Open panel">
@@ -44,7 +45,6 @@
         </section>
     </main>
 
-    <div id="statusIndicator" aria-live="polite">Mic: Off | Camera: Off</div>
     <div id="appToast" class="app-toast" role="status" aria-live="polite" hidden></div>
 
     <aside id="dropdownPanel" class="dropdown-panel" aria-label="Collaboration panel">
@@ -160,11 +160,11 @@
         </button>
     </nav>
 
-    <script src="js/rooms-app.js"></script>
-    <script src="js/rooms-peer-connection.js"></script>
-    <script src="js/rooms-video-controls.js"></script>
-    <script src="js/rooms-ui-controls.js"></script>
-    <script src="js/rooms-whiteboard.js"></script>
-    <script src="js/rooms-chat.js"></script>
+    <script src="js/rooms-app.js?v=20260601-chat-bg-fix"></script>
+    <script src="js/rooms-peer-connection.js?v=20260601-chat-bg-fix"></script>
+    <script src="js/rooms-video-controls.js?v=20260601-chat-bg-fix"></script>
+    <script src="js/rooms-ui-controls.js?v=20260601-chat-bg-fix"></script>
+    <script src="js/rooms-whiteboard.js?v=20260601-chat-bg-fix"></script>
+    <script src="js/rooms-chat.js?v=20260601-chat-bg-fix"></script>
 </body>
 </html>

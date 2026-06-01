@@ -357,8 +357,9 @@
         await waitForVideoMetadata(segmentationSourceVideo);
 
         segmentationCanvas = document.createElement("canvas");
-        segmentationContext = segmentationCanvas.getContext("2d", { alpha: false });
+        segmentationContext = segmentationCanvas.getContext("2d");
         resizeSegmentationCanvas();
+        drawInitialProcessedFrame();
 
         segmentation = new window.SelfieSegmentation({
             locateFile: file => `vendor/mediapipe/selfie_segmentation/${file}`
@@ -465,6 +466,22 @@
         context.globalCompositeOperation = "destination-over";
         drawSelectedBackground(context, results.image, width, height);
         context.globalCompositeOperation = "source-over";
+        context.restore();
+    }
+
+    function drawInitialProcessedFrame() {
+        if (!segmentationCanvas || !segmentationContext || !segmentationSourceVideo) {
+            return;
+        }
+
+        const { width, height } = segmentationCanvas;
+        const context = segmentationContext;
+
+        context.save();
+        context.clearRect(0, 0, width, height);
+        drawSelectedBackground(context, segmentationSourceVideo, width, height);
+        context.globalAlpha = 0.98;
+        drawImageCover(context, segmentationSourceVideo, width, height);
         context.restore();
     }
 

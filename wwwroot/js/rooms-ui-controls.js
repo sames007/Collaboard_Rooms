@@ -71,6 +71,7 @@
         menuButton?.setAttribute("aria-label", isOpen ? "Close collaboration panel" : "Open collaboration panel");
         menuButton?.setAttribute("title", isOpen ? "Close panel" : "Open panel");
         dropdownPanel.setAttribute("aria-hidden", String(!isOpen));
+        document.body.classList.toggle("panel-open", isOpen);
     }
 
     function showPanel(panel) {
