@@ -20,6 +20,7 @@
     bindClick("virtualBackgroundButton", toggleBackgroundMenu);
     bindClick("raiseHandButton", () => app.raiseHand());
     bindClick("recordButton", () => app.toggleRecording());
+    applyFeatureSupport();
 
     document.querySelectorAll("[data-background-effect]").forEach(option => {
         option.addEventListener("click", async event => {
@@ -94,6 +95,18 @@
     }
 
     function toggleBackgroundMenu() {
+        const support = app.getMediaFeatureSupport?.();
+
+        if (support && !support.virtualBackground) {
+            const message = support.isIOS
+                ? "Virtual backgrounds are disabled on iPhone to prevent black video."
+                : "Virtual backgrounds are not supported on this browser.";
+
+            app.notify?.(message, true);
+            app.appendSystemMessage?.(message);
+            return;
+        }
+
         if (!backgroundMenu) {
             app.toggleVirtualBackground?.();
             return;
@@ -127,6 +140,41 @@
             event.preventDefault();
             handler(event);
         });
+    }
+
+    function applyFeatureSupport() {
+        const support = app.getMediaFeatureSupport?.();
+
+        if (!support) {
+            return;
+        }
+
+        markUnsupported(
+            "screenShareButton",
+            !support.displayMedia,
+            "Screen sharing is not supported on this browser");
+        markUnsupported(
+            "recordButton",
+            !support.mediaRecorder,
+            "Recording is not supported on this browser");
+        markUnsupported(
+            "virtualBackgroundButton",
+            !support.virtualBackground,
+            support.isIOS
+                ? "Virtual backgrounds are disabled on iPhone to prevent black video"
+                : "Virtual backgrounds are not supported on this browser");
+    }
+
+    function markUnsupported(id, isUnsupported, title) {
+        const button = document.getElementById(id);
+
+        if (!button || !isUnsupported) {
+            return;
+        }
+
+        button.classList.add("is-unsupported");
+        button.setAttribute("aria-disabled", "true");
+        button.setAttribute("title", title);
     }
 
     function notify(message, isError = false) {

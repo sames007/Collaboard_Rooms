@@ -13,8 +13,10 @@
     };
     const supportedVideoEffects = Object.keys(backgroundConfigs);
     const loadedBackgrounds = new Map();
+    const mediaFeatureSupport = getMediaFeatureSupport();
 
-    document.documentElement.dataset.mediaPipe = window.SelfieSegmentation ? "ready" : "missing";
+    document.documentElement.dataset.mediaPipe = mediaFeatureSupport.mediaPipe ? "ready" : "missing";
+    document.documentElement.dataset.virtualBackground = mediaFeatureSupport.virtualBackground ? "ready" : "unsupported";
 
     let isRecording = false;
     let mediaRecorder = null;
@@ -35,8 +37,16 @@
     let segmentationErrorShown = false;
     let currentVideoEffect = "none";
     let backgroundBeforeScreenShare = "none";
+    let recordingMimeType = "video/webm";
 
     app.getLocalMedia = async function getLocalMedia() {
+        if (!mediaFeatureSupport.getUserMedia) {
+            app.notify?.("Camera and microphone need a browser with media support. Use the HTTPS Render link on iPhone.", true);
+            app.appendSystemMessage?.("Camera and microphone are unavailable in this browser or context.");
+            rawLocalStream = new MediaStream();
+            return rawLocalStream;
+        }
+
         const constraints = {
             audio: true,
             video: {
@@ -137,6 +147,16 @@
     app.setVideoEffect = async function setVideoEffect(effect) {
         const selectedEffect = normalizeVideoEffect(effect);
 
+        if (selectedEffect !== "none" && !mediaFeatureSupport.virtualBackground) {
+            const message = mediaFeatureSupport.isIOS
+                ? "Virtual backgrounds are disabled on iPhone to prevent black video. Your camera can still be used normally."
+                : "Virtual backgrounds are not supported by this browser. Your camera can still be used normally.";
+
+            app.notify?.(message, true);
+            app.appendSystemMessage?.(message);
+            return;
+        }
+
         if (selectedEffect !== "none" && !getRawVideoTrack()) {
             app.notify?.("Allow camera access before choosing a virtual background.", true);
             app.appendSystemMessage?.("No camera track is available for MediaPipe background replacement.");
@@ -162,8 +182,8 @@
             await invokeHub("SetVideoEffect", currentVideoEffect);
         } catch (error) {
             console.error("Unable to apply MediaPipe background.", error);
-            app.notify?.("MediaPipe background replacement could not start. Try Chrome or Edge with camera access enabled.", true);
-            app.appendSystemMessage?.("MediaPipe background replacement could not start. Try Chrome or Edge with camera access enabled.");
+            app.notify?.("MediaPipe background replacement could not start in this browser.", true);
+            app.appendSystemMessage?.("MediaPipe background replacement could not start in this browser.");
             currentVideoEffect = "none";
             app.state.peerEffects?.set(app.state.peerId, currentVideoEffect);
             await stopVirtualBackgroundProcessor(true);
@@ -184,6 +204,12 @@
     };
 
     app.toggleScreenShare = async function toggleScreenShare() {
+        if (!mediaFeatureSupport.displayMedia) {
+            app.notify?.("Screen sharing is not supported on this browser.", true);
+            app.appendSystemMessage?.("Screen sharing is not available on this browser.");
+            return;
+        }
+
         if (isScreenSharing) {
             await stopScreenShare();
             return;
@@ -193,6 +219,12 @@
     };
 
     app.toggleRecording = async function toggleRecording() {
+        if (!mediaFeatureSupport.mediaRecorder) {
+            app.notify?.("Recording is not supported on this browser.", true);
+            app.appendSystemMessage?.("Recording is not available on this browser.");
+            return;
+        }
+
         if (!window.localStream || window.localStream.getTracks().length === 0) {
             app.appendSystemMessage?.("There is no local media stream to record.");
             return;
@@ -210,6 +242,7 @@
     app.setVideoTileCameraState = setVideoTileCameraState;
     app.applyVideoEffect = setVideoTileBackgroundState;
     app.toggleVideoVirtualBackground = toggleVideoVirtualBackground;
+    app.getMediaFeatureSupport = () => ({ ...mediaFeatureSupport });
     app.getCurrentVideoEffect = () => currentVideoEffect;
     app.showRaisedHand = showRaisedHand;
     app.setScreenShareState = setScreenShareState;
@@ -223,14 +256,13 @@
         const video = document.createElement("video");
         video.autoplay = true;
         video.playsInline = true;
+        video.setAttribute("playsinline", "");
+        video.setAttribute("webkit-playsinline", "");
         video.muted = isLocal;
         video.srcObject = stream;
 
-        if (!isLocal) {
-            video.addEventListener("loadedmetadata", () => {
-                video.play().catch(error => console.warn("Remote video playback was blocked.", error));
-            });
-        }
+        video.addEventListener("loadedmetadata", () => playVideoElement(video, isLocal));
+        video.addEventListener("canplay", () => playVideoElement(video, isLocal), { once: true });
 
         const label = document.createElement("div");
         label.className = "video-label";
@@ -240,11 +272,15 @@
         const emptyState = createStatusOverlay("empty-video-state", "fa-user", "No video available");
         const handBadge = createIconBadge("hand-badge", "fa-hand");
         const backgroundBadge = createBackgroundBadge();
+        const badgeStack = document.createElement("div");
 
         const recIndicator = document.createElement("div");
         recIndicator.className = "rec-indicator";
 
-        container.append(video, cameraOff, emptyState, handBadge, backgroundBadge, recIndicator, label);
+        badgeStack.className = "video-badge-stack";
+        badgeStack.append(backgroundBadge, handBadge);
+
+        container.append(video, cameraOff, emptyState, badgeStack, recIndicator, label);
         videoGrid.appendChild(container);
 
         const hasVideo = stream?.getVideoTracks().length > 0;
@@ -334,11 +370,11 @@
             return;
         }
 
-        if (!window.SelfieSegmentation) {
+        if (!mediaFeatureSupport.mediaPipe) {
             throw new Error("MediaPipe SelfieSegmentation is not loaded.");
         }
 
-        if (!HTMLCanvasElement.prototype.captureStream) {
+        if (!mediaFeatureSupport.canvasCaptureStream) {
             throw new Error("Canvas captureStream is not supported.");
         }
 
@@ -352,6 +388,8 @@
         segmentationSourceVideo.autoplay = true;
         segmentationSourceVideo.muted = true;
         segmentationSourceVideo.playsInline = true;
+        segmentationSourceVideo.setAttribute("playsinline", "");
+        segmentationSourceVideo.setAttribute("webkit-playsinline", "");
         segmentationSourceVideo.srcObject = new MediaStream([cameraTrack]);
         await segmentationSourceVideo.play();
         await waitForVideoMetadata(segmentationSourceVideo);
@@ -704,24 +742,30 @@
     }
 
     function startRecording() {
-        const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-            ? "video/webm;codecs=vp9"
-            : "video/webm";
+        const recordingOptions = getRecordingOptions();
 
         recordedChunks = [];
-        mediaRecorder = new MediaRecorder(window.localStream, { mimeType });
-        mediaRecorder.ondataavailable = event => {
-            if (event.data.size > 0) {
-                recordedChunks.push(event.data);
-            }
-        };
-        mediaRecorder.onstop = downloadRecording;
-        mediaRecorder.start();
 
-        isRecording = true;
-        setRecordingState(app.state.peerId, true);
-        document.getElementById("recordBtnLabel").textContent = "Stop";
-        document.getElementById("recordButton")?.classList.add("is-active");
+        try {
+            mediaRecorder = new MediaRecorder(window.localStream, recordingOptions);
+            recordingMimeType = mediaRecorder.mimeType || recordingOptions.mimeType || "video/webm";
+            mediaRecorder.ondataavailable = event => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+            mediaRecorder.onstop = downloadRecording;
+            mediaRecorder.start();
+
+            isRecording = true;
+            setRecordingState(app.state.peerId, true);
+            document.getElementById("recordBtnLabel").textContent = "Stop";
+            document.getElementById("recordButton")?.classList.add("is-active");
+        } catch (error) {
+            console.warn("Recording could not start.", error);
+            app.notify?.("Recording could not start in this browser.", true);
+            app.appendSystemMessage?.("Recording could not start in this browser.");
+        }
     }
 
     function stopRecording() {
@@ -733,12 +777,14 @@
     }
 
     function downloadRecording() {
-        const blob = new Blob(recordedChunks, { type: "video/webm" });
+        const mimeType = recordingMimeType || "video/webm";
+        const extension = mimeType.includes("mp4") ? "mp4" : "webm";
+        const blob = new Blob(recordedChunks, { type: mimeType });
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
 
         anchor.href = url;
-        anchor.download = `collaboard-recording-${Date.now()}.webm`;
+        anchor.download = `collaboard-recording-${Date.now()}.${extension}`;
         document.body.append(anchor);
         anchor.click();
         anchor.remove();
@@ -750,7 +796,19 @@
 
         if (video) {
             video.srcObject = stream;
+            playVideoElement(video, true);
         }
+    }
+
+    function playVideoElement(video, isLocal) {
+        if (!video || typeof video.play !== "function") {
+            return;
+        }
+
+        video.play().catch(error => {
+            const label = isLocal ? "Local" : "Remote";
+            console.warn(`${label} video playback was blocked.`, error);
+        });
     }
 
     function setScreenShareButton(sharing) {
@@ -799,6 +857,47 @@
 
     function normalizeVideoEffect(effect) {
         return Object.prototype.hasOwnProperty.call(backgroundConfigs, effect) ? effect : "none";
+    }
+
+    function getMediaFeatureSupport() {
+        const mediaDevices = navigator.mediaDevices || {};
+        const canvasCaptureStream = Boolean(HTMLCanvasElement.prototype.captureStream);
+        const isIOS = isIOSDevice();
+        const mediaPipe = Boolean(window.SelfieSegmentation);
+
+        return {
+            canvasCaptureStream,
+            displayMedia: typeof mediaDevices.getDisplayMedia === "function",
+            getUserMedia: typeof mediaDevices.getUserMedia === "function",
+            isIOS,
+            mediaPipe,
+            mediaRecorder: typeof window.MediaRecorder === "function",
+            virtualBackground: mediaPipe && canvasCaptureStream && !isIOS
+        };
+    }
+
+    function isIOSDevice() {
+        const platform = navigator.platform || "";
+        const userAgent = navigator.userAgent || "";
+        const isTouchMac = platform === "MacIntel" && navigator.maxTouchPoints > 1;
+
+        return /iPad|iPhone|iPod/.test(platform) || /iPad|iPhone|iPod/.test(userAgent) || isTouchMac;
+    }
+
+    function getRecordingOptions() {
+        const preferredTypes = [
+            "video/webm;codecs=vp9",
+            "video/webm;codecs=vp8",
+            "video/webm",
+            "video/mp4"
+        ];
+
+        if (typeof MediaRecorder.isTypeSupported !== "function") {
+            return {};
+        }
+
+        const mimeType = preferredTypes.find(type => MediaRecorder.isTypeSupported(type));
+        return mimeType ? { mimeType } : {};
     }
 
     function waitForVideoMetadata(video) {

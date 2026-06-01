@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
     <script src="https://www.whiteboard.team/dist/api.js"></script>
 
-    <link rel="stylesheet" href="rooms.css?v=20260601-chat-bg-fix" />
+    <link rel="stylesheet" href="rooms.css?v=20260601-mobile-ui-fix" />
 </head>
 <body>
     <div id="usernameModal" role="dialog" aria-modal="true" aria-labelledby="usernameTitle">
@@ -27,11 +27,13 @@
 
     <header class="app-header">
         <div class="brand">
-            <img src="final_logo.png" alt="Collaboard Rooms" />
+            <img class="brand-logo" src="final_logo.png" alt="Collaboard Rooms" />
             <div class="session-meta">
-                <span>Room <strong id="roomNameDisplay"></strong></span>
-                <span id="connectionStatus" class="connection-status">Not connected</span>
-                <span id="statusIndicator" class="media-status" aria-live="polite">Mic: Off | Camera: Off</span>
+                <span class="room-pill">Room <strong id="roomNameDisplay"></strong></span>
+                <span class="status-pills">
+                    <span id="connectionStatus" class="connection-status">Not connected</span>
+                    <span id="statusIndicator" class="media-status" aria-live="polite">Mic: Off | Camera: Off</span>
+                </span>
             </div>
         </div>
         <button class="icon-button" id="menuToggle" type="button" aria-label="Open collaboration panel" title="Open panel">
@@ -160,11 +162,11 @@
         </button>
     </nav>
 
-    <script src="js/rooms-app.js?v=20260601-chat-bg-fix"></script>
-    <script src="js/rooms-peer-connection.js?v=20260601-chat-bg-fix"></script>
-    <script src="js/rooms-video-controls.js?v=20260601-chat-bg-fix"></script>
-    <script src="js/rooms-ui-controls.js?v=20260601-chat-bg-fix"></script>
-    <script src="js/rooms-whiteboard.js?v=20260601-chat-bg-fix"></script>
-    <script src="js/rooms-chat.js?v=20260601-chat-bg-fix"></script>
+    <script src="js/rooms-app.js?v=20260601-mobile-ui-fix"></script>
+    <script src="js/rooms-peer-connection.js?v=20260601-mobile-ui-fix"></script>
+    <script src="js/rooms-video-controls.js?v=20260601-mobile-ui-fix"></script>
+    <script src="js/rooms-ui-controls.js?v=20260601-mobile-ui-fix"></script>
+    <script src="js/rooms-whiteboard.js?v=20260601-mobile-ui-fix"></script>
+    <script src="js/rooms-chat.js?v=20260601-mobile-ui-fix"></script>
 </body>
 </html>

@@ -2,6 +2,8 @@
 
 Collaboard Rooms is a real-time video collaboration app built with ASP.NET Core SignalR, PeerJS/WebRTC, MediaPipe Selfie Segmentation, chat, screen sharing, local recording, and an embedded whiteboard. The app is designed to run as one full-stack web service on Render and uses PeerJS Cloud for WebRTC peer discovery.
 
+This repository contains my portion of a team project. The full team repository is available at [d-jason32/CollaBoard](https://github.com/d-jason32/CollaBoard).
+
 ## Live Demo
 
 Production URL:
@@ -65,6 +67,8 @@ To test by yourself:
 
 Some browsers only let one tab use the same camera at a time. If the second tab cannot access the camera, use your phone or another browser profile for the most reliable video test.
 
+For iPhone testing, use the deployed HTTPS Render URL instead of `127.0.0.1` or `localhost`. Mobile Safari treats those local computer URLs as a different device, and camera or microphone access requires a secure browser context.
+
 To test with someone else, send them the same room URL, for example:
 
 ```text
@@ -78,6 +82,7 @@ If the Render service has been idle, the first load can take 30-60 seconds while
 - If chat looks unavailable, use the top-right panel button to open the collaboration panel, then select the Chat tab.
 - If a message does not send, wait until the room status changes to `Connected`, then try again.
 - If virtual backgrounds do not start, make sure the browser has camera permission. MediaPipe needs an active camera track before it can replace the background.
+- If you are testing on iPhone, virtual backgrounds are disabled to avoid black processed video, and screen sharing or local recording may be unavailable because iOS Safari does not expose every desktop media API.
 - If the camera permission was blocked, reset the browser permission for the site, refresh the room, and join again.
 
 ## Deploying To Render

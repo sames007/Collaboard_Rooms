@@ -21,10 +21,23 @@
     const usernameInput = document.getElementById("usernameInput");
     const usernameError = document.getElementById("usernameError");
     const usernameModal = document.getElementById("usernameModal");
+    const usernameSubmitButton = usernameForm.querySelector("button[type='submit']");
     const connectionStatus = document.getElementById("connectionStatus");
 
     roomDisplay.textContent = state.roomName;
     usernameInput.focus();
+
+    window.addEventListener("error", event => {
+        if (!state.roomJoined) {
+            handleStartupError("The room could not finish loading. Refresh and try again.", event.error);
+        }
+    });
+
+    window.addEventListener("unhandledrejection", event => {
+        if (!state.roomJoined) {
+            handleStartupError("The room could not finish loading. Refresh and try again.", event.reason);
+        }
+    });
 
     usernameForm.addEventListener("submit", async event => {
         event.preventDefault();
@@ -38,9 +51,13 @@
 
         usernameError.textContent = "";
         state.username = displayName.slice(0, 40);
-        usernameModal.style.display = "none";
+        setJoiningFormState(true, "Opening room...");
 
-        await startSession();
+        try {
+            await startSession();
+        } catch (error) {
+            handleStartupError("Unable to open the room. Refresh and try again.", error);
+        }
     });
 
     async function startSession() {
@@ -50,6 +67,11 @@
 
         state.started = true;
         setConnectionStatus("Connecting...");
+
+        if (typeof signalR === "undefined" || !signalR.HubConnectionBuilder) {
+            handleStartupError("Real-time chat did not load. Check your connection and refresh.");
+            return;
+        }
 
         state.connection = new signalR.HubConnectionBuilder()
             .withUrl("/chatHub")
@@ -72,6 +94,7 @@
             if (attempt >= maxConnectionAttempts) {
                 setConnectionStatus("Connection failed", true);
                 app.appendSystemMessage?.("Unable to connect to the room. Refresh and try again.");
+                handleStartupError("Unable to connect to the room. Refresh and try again.", error);
                 return;
             }
 
@@ -82,9 +105,34 @@
     }
 
     function initializePeer() {
-        state.peer = new Peer();
+        if (typeof Peer !== "function") {
+            handleStartupError("Video signaling did not load. Check your connection and refresh.");
+            return;
+        }
 
-        state.peer.on("open", async id => {
+        try {
+            state.peer = new Peer();
+        } catch (error) {
+            handleStartupError("Video signaling could not start in this browser.", error);
+            return;
+        }
+
+        state.peer.on("open", id => {
+            handlePeerOpen(id);
+        });
+
+        state.peer.on("call", call => app.handleIncomingCall(call));
+        state.peer.on("error", error => {
+            console.error("PeerJS error.", error);
+            app.appendSystemMessage?.("Peer connection error. Video may be unavailable.");
+            if (!state.peerId) {
+                handleStartupError("Video signaling could not connect. Refresh and try again.", error);
+            }
+        });
+    }
+
+    async function handlePeerOpen(id) {
+        try {
             state.peerId = id;
             state.peerUsernames.set(id, state.username);
             state.peerEffects.set(id, app.getCurrentVideoEffect?.() || "none");
@@ -94,6 +142,7 @@
             window.localStream = stream;
             app.addLocalVideo(state.username);
             app.updateStatusIndicator();
+            hideJoinModal();
 
             try {
                 await state.connection.invoke("JoinRoom", state.roomName, id, state.username);
@@ -105,13 +154,9 @@
                 app.appendSystemMessage?.("Unable to join the room. Refresh and try again.");
                 setConnectionStatus("Join failed", true);
             }
-        });
-
-        state.peer.on("call", call => app.handleIncomingCall(call));
-        state.peer.on("error", error => {
-            console.error("PeerJS error.", error);
-            app.appendSystemMessage?.("Peer connection error. Video may be unavailable.");
-        });
+        } catch (error) {
+            handleStartupError("Camera or video setup could not finish. Refresh and try again.", error);
+        }
     }
 
     function registerSignalRHandlers(connection) {
@@ -189,6 +234,50 @@
     function setConnectionStatus(message, isError = false) {
         connectionStatus.textContent = message;
         connectionStatus.classList.toggle("is-error", isError);
+    }
+
+    function setJoiningFormState(isJoining, message, isError = false) {
+        usernameInput.disabled = isJoining;
+        usernameSubmitButton.disabled = isJoining;
+        usernameSubmitButton.textContent = isJoining ? "Joining..." : "Join room";
+        usernameError.textContent = message;
+        usernameError.classList.toggle("is-info", !isError && Boolean(message));
+    }
+
+    function hideJoinModal() {
+        usernameModal.style.display = "none";
+        setJoiningFormState(false, "");
+    }
+
+    function handleStartupError(message, error) {
+        if (error) {
+            console.error(message, error);
+        }
+
+        cleanupStartupConnections();
+        state.started = false;
+        setRoomJoined(false);
+        setConnectionStatus("Connection failed", true);
+        usernameModal.style.display = "flex";
+        setJoiningFormState(false, message, true);
+    }
+
+    function cleanupStartupConnections() {
+        try {
+            state.peer?.destroy?.();
+        } catch (error) {
+            console.warn("Unable to clean up PeerJS after startup failure.", error);
+        }
+
+        try {
+            void state.connection?.stop?.();
+        } catch (error) {
+            console.warn("Unable to stop SignalR after startup failure.", error);
+        }
+
+        state.peer = null;
+        state.peerId = null;
+        state.connection = null;
     }
 
     function setRoomJoined(isJoined) {
