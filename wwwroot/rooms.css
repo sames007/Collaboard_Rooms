@@ -276,10 +276,11 @@ button {
 
 .video-badge-stack {
     display: flex;
-    gap: 8px;
-    max-width: calc(100% - 20px);
-    right: 10px;
-    top: 10px;
+    gap: 7px;
+    justify-content: flex-end;
+    max-width: calc(100% - 32px);
+    right: 16px;
+    top: 16px;
 }
 
 .hand-badge,
@@ -332,12 +333,22 @@ button {
     border-radius: 999px;
     color: var(--accent);
     display: none;
+    flex: 0 1 auto;
     font-size: 0.76rem;
     font-weight: 700;
     gap: 5px;
-    max-width: min(110px, calc(100% - 42px));
+    max-width: min(118px, calc(100% - 42px));
+    min-width: 0;
+    overflow: hidden;
     padding: 5px 8px;
     position: static;
+}
+
+.background-badge span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .video-container.has-video-background .background-badge {
@@ -1052,8 +1063,9 @@ body.panel-open .app-toast {
 
     .video-badge-stack {
         gap: 6px;
-        right: 8px;
-        top: 8px;
+        max-width: calc(100% - 24px);
+        right: 12px;
+        top: 12px;
     }
 
     .hand-badge {
@@ -1063,6 +1075,7 @@ body.panel-open .app-toast {
 
     .background-badge {
         font-size: 0.68rem;
+        max-width: min(92px, calc(100% - 36px));
         padding: 4px 7px;
     }
 
