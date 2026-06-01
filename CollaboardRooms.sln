@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalRChat", "SignalRChat.csproj", "{13CA2826-8384-407F-8EE4-512DA3183187}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CollaboardRooms", "CollaboardRooms.csproj", "{13CA2826-8384-407F-8EE4-512DA3183187}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

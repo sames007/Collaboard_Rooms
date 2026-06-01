@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: collaboard-rooms
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production

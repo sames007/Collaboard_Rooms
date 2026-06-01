@@ -338,6 +338,14 @@ OpenCover/
 # Azure Stream Analytics local run output
 ASALocalRun/
 
+# Local application configuration with machine-specific secrets.
+appsettings.Local.json
+appsettings.*.Local.json
+
+# Local verification tooling downloaded for this workspace.
+.tools/
+.deploy/
+
 # MSBuild Binary and Structured Log
 *.binlog
 

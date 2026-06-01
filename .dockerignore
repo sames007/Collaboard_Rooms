@@ -1,0 +1,10 @@
+.deploy/
+.git/
+.github/
+.idea/
+.tools/
+bin/
+obj/
+*.log
+*.msi
+Dockerfile

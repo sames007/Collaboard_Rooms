@@ -1,69 +1,88 @@
-﻿// === ui-controls.js ===
-// Handles the slide‑out panel behavior and tab switching logic.
+(() => {
+    const app = window.Collaboard = window.Collaboard || {};
+    const dropdownPanel = document.getElementById("dropdownPanel");
+    const resizeHandle = document.getElementById("panelResizeHandle");
 
-// Get references to the dropdown panel and resize handle elements
-const dropdownPanel = document.getElementById("dropdownPanel");
-const resizeHandle = document.getElementById("panelResizeHandle");
+    let isResizing = false;
+    let startX = 0;
+    let startWidth = 0;
 
-// Variables for tracking panel resizing
-let isResizing = false, startX, startW;
+    bindClick("menuToggle", toggleDropdownPanel);
+    bindClick("chatTab", () => showPanel("chat"));
+    bindClick("whiteboardTab", () => showPanel("whiteboard"));
+    bindClick("muteButton", () => app.toggleMute());
+    bindClick("cameraButton", () => app.toggleCamera());
+    bindClick("screenShareButton", () => app.toggleScreenShare());
+    bindClick("virtualBackgroundButton", () => app.toggleVirtualBackground());
+    bindClick("raiseHandButton", () => app.raiseHand());
+    bindClick("recordButton", () => app.toggleRecording());
 
-/**
- * Toggles the visibility of the dropdown panel by
- * adding/removing the 'open' CSS class.
- */
-function toggleDropdownPanel() {
-    dropdownPanel.classList.toggle("open");
-}
-
-/**
- * Switches between the 'chat' and 'whiteboard' panels.
- * Highlights the selected tab and shows the corresponding panel.
- * Initializes whiteboard on first open.
- * 
- * @param {string} panel - The panel to activate ('chat' or 'whiteboard')
- */
-function showPanel(panel) {
-    ["chat", "whiteboard"].forEach(p => {
-        document.getElementById(p + "Panel").classList.remove("active");
-        document.getElementById(p + "Tab").classList.remove("active");
+    resizeHandle.addEventListener("pointerdown", event => {
+        isResizing = true;
+        startX = event.clientX;
+        startWidth = dropdownPanel.offsetWidth;
+        resizeHandle.setPointerCapture(event.pointerId);
+        document.body.style.cursor = "ew-resize";
+        event.preventDefault();
     });
-    document.getElementById(panel + "Panel").classList.add("active");
-    document.getElementById(panel + "Tab").classList.add("active");
 
-    // Lazy-load whiteboard setup if needed
-    if (panel === "whiteboard" && !wtInitialized) initializeWhiteboard();
-}
+    resizeHandle.addEventListener("pointermove", event => {
+        if (!isResizing) {
+            return;
+        }
 
-// === Resizable Panel Logic ===
+        const delta = startX - event.clientX;
+        const maxWidth = window.innerWidth - 24;
+        const nextWidth = Math.min(Math.max(startWidth + delta, 320), maxWidth);
+        dropdownPanel.style.width = `${nextWidth}px`;
+    });
 
-/**
- * Begins the resizing interaction when the user presses the mouse
- * down on the resize handle.
- */
-resizeHandle.addEventListener("mousedown", e => {
-    isResizing = true;
-    startX = e.clientX; // Store initial mouse X position
-    startW = dropdownPanel.offsetWidth; // Store initial panel width
-    document.body.style.cursor = "ew-resize"; // Change cursor to resize mode
-    e.preventDefault(); // Prevent text selection
-});
+    resizeHandle.addEventListener("pointerup", endResize);
+    resizeHandle.addEventListener("pointercancel", endResize);
 
-/**
- * Adjusts the panel width dynamically as the user moves the mouse.
- */
-document.addEventListener("mousemove", e => {
-    if (!isResizing) return;
-    const dx = startX - e.clientX; // Calculate movement delta
-    dropdownPanel.style.width = Math.max(startW + dx, 300) + "px"; // Set new width (min 300px)
-});
+    function toggleDropdownPanel() {
+        const isOpen = dropdownPanel.classList.toggle("open");
+        const menuButton = document.getElementById("menuToggle");
 
-/**
- * Ends the resizing interaction when the mouse is released.
- */
-document.addEventListener("mouseup", () => {
-    if (isResizing) {
-        isResizing = false;
-        document.body.style.cursor = "default"; // Restore default cursor
+        menuButton?.setAttribute("aria-label", isOpen ? "Close collaboration panel" : "Open collaboration panel");
+        menuButton?.setAttribute("title", isOpen ? "Close panel" : "Open panel");
     }
-});
+
+    function showPanel(panel) {
+        const panels = ["chat", "whiteboard"];
+
+        panels.forEach(name => {
+            const panelElement = document.getElementById(`${name}Panel`);
+            const tabElement = document.getElementById(`${name}Tab`);
+            const isActive = name === panel;
+
+            panelElement.classList.toggle("active", isActive);
+            panelElement.hidden = !isActive;
+            tabElement.classList.toggle("active", isActive);
+            tabElement.setAttribute("aria-selected", String(isActive));
+        });
+
+        if (panel === "whiteboard") {
+            app.initializeWhiteboard?.();
+        }
+    }
+
+    function endResize() {
+        if (!isResizing) {
+            return;
+        }
+
+        isResizing = false;
+        document.body.style.cursor = "";
+    }
+
+    function bindClick(id, handler) {
+        document.getElementById(id)?.addEventListener("click", event => {
+            event.preventDefault();
+            handler(event);
+        });
+    }
+
+    app.toggleDropdownPanel = toggleDropdownPanel;
+    app.showPanel = showPanel;
+})();

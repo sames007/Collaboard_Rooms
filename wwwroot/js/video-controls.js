@@ -1,304 +1,391 @@
-﻿// === video‑controls.js ===
-// Manages local/remote video, recording, screen sharing, and UI updates.
+(() => {
+    const app = window.Collaboard = window.Collaboard || {};
+    const videoGrid = document.getElementById("videoGrid");
+    const statusIndicator = document.getElementById("statusIndicator");
 
-const videoGrid = document.getElementById("videoGrid");
-let isRecording = false;
-let mediaRecorder = null;
-let recordedChunks = [];
-let localVideoAdded = false;
-let isScreenSharing = false;
-let originalStream = null;
-const mediaConnections = [];  // store every PeerJS MediaConnection
+    let isRecording = false;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let localVideoAdded = false;
+    let isScreenSharing = false;
+    let originalStream = null;
+    let screenStream = null;
 
-/**
- * Updates the mic/cam status indicator.
- */
-function updateStatusIndicator() {
-    if (!window.localStream) return;
-    const mic = window.localStream.getAudioTracks()[0]?.enabled ? "On" : "Muted";
-    const cam = window.localStream.getVideoTracks()[0]?.enabled ? "On" : "Off";
-    document.getElementById("statusIndicator").innerText = `Mic: ${mic} | Camera: ${cam}`;
-}
+    app.getLocalMedia = async function getLocalMedia() {
+        const constraints = {
+            audio: true,
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                frameRate: { ideal: 24, max: 30 }
+            }
+        };
 
-/**
- * Adds the local video (only once).
- */
-function addLocalVideo(name) {
-    if (localVideoAdded || !window.localStream) return;
-    localVideoAdded = true;
+        try {
+            return await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (videoError) {
+            console.warn("Camera and microphone request failed.", videoError);
 
-    const container = document.createElement("div");
-    container.className = "video-container";
-    container.id = `container-${peerIdAvailable}`;
+            try {
+                return await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            } catch (audioError) {
+                console.warn("Audio-only request failed.", audioError);
+                app.appendSystemMessage?.("Camera and microphone are unavailable. You can still use chat.");
+                return new MediaStream();
+            }
+        }
+    };
 
-    const video = document.createElement("video");
-    video.autoplay = true;
-    video.muted = true;
-    video.playsInline = true;
-    video.srcObject = window.localStream;
+    app.addLocalVideo = function addLocalVideo(name) {
+        if (localVideoAdded) {
+            return;
+        }
 
-    const label = document.createElement("div");
-    label.className = "video-label";
-    label.innerText = name;
+        localVideoAdded = true;
+        addVideoTile(app.state.peerId, window.localStream, name, true);
+    };
 
-    container.append(video, label);
-    videoGrid.appendChild(container);
-    updateVideoGridLayout();
-}
+    app.addRemoteVideo = function addRemoteVideo(peerId, stream, name) {
+        if (document.getElementById(tileId(peerId))) {
+            return;
+        }
 
-/**
- * Adds a remote peer’s video (no built‑in controls).
- */
-function addRemoteVideo(id, stream, name) {
-    if (document.getElementById(`container-${id}`)) return;
+        addVideoTile(peerId, stream, name, false);
+    };
 
-    const container = document.createElement("div");
-    container.className = "video-container";
-    container.id = `container-${id}`;
+    app.removeVideoContainer = function removeVideoContainer(peerId) {
+        document.getElementById(tileId(peerId))?.remove();
+        updateVideoGridLayout();
+    };
 
-    const video = document.createElement("video");
-    video.autoplay = true;
-    video.playsInline = true;
-    video.srcObject = stream;
+    app.updateStatusIndicator = function updateStatusIndicator() {
+        const audioTrack = window.localStream?.getAudioTracks()[0];
+        const videoTrack = window.localStream?.getVideoTracks()[0];
+        const mic = audioTrack ? (audioTrack.enabled ? "On" : "Muted") : "Unavailable";
+        const camera = videoTrack ? (videoTrack.enabled ? "On" : "Off") : "Unavailable";
 
-    video.addEventListener("loadedmetadata", () =>
-        video.play().catch(console.error)
-    );
+        statusIndicator.textContent = `Mic: ${mic} | Camera: ${camera}`;
+    };
 
-    const label = document.createElement("div");
-    label.className = "video-label";
-    label.innerText = name;
+    app.toggleMute = function toggleMute() {
+        const audioTrack = window.localStream?.getAudioTracks()[0];
 
-    container.append(video, label);
-    videoGrid.appendChild(container);
-    updateVideoGridLayout();
+        if (!audioTrack) {
+            app.appendSystemMessage?.("No microphone track is available.");
+            return;
+        }
 
-    // separate audio element to bypass autoplay restrictions
-    const audio = new Audio();
-    audio.srcObject = stream;
-    audio.autoplay = true;
-    audio.play().catch(console.error);
-}
+        audioTrack.enabled = !audioTrack.enabled;
+        document.getElementById("muteButton")?.classList.toggle("is-active", !audioTrack.enabled);
+        app.updateStatusIndicator();
+    };
 
-/**
- * Removes a peer’s video container.
- */
-function removeVideoContainer(id) {
-    const c = document.getElementById(`container-${id}`);
-    if (c) {
-        c.remove();
+    app.toggleCamera = async function toggleCamera() {
+        const videoTrack = window.localStream?.getVideoTracks()[0];
+
+        if (!videoTrack) {
+            app.appendSystemMessage?.("No camera track is available.");
+            return;
+        }
+
+        videoTrack.enabled = !videoTrack.enabled;
+        setVideoTileCameraState(app.state.peerId, videoTrack.enabled);
+        document.getElementById("cameraButton")?.classList.toggle("is-active", !videoTrack.enabled);
+        app.updateStatusIndicator();
+
+        await invokeHub("ToggleCamera", videoTrack.enabled);
+    };
+
+    app.toggleVirtualBackground = async function toggleVirtualBackground() {
+        if (!window.localStream?.getVideoTracks().length) {
+            app.appendSystemMessage?.("No video track is available for background effects.");
+            return;
+        }
+
+        toggleVideoVirtualBackground(app.state.peerId);
+        document.getElementById("virtualBackgroundButton")?.classList.toggle("is-active");
+        await invokeHub("ToggleVirtualBackground");
+    };
+
+    app.raiseHand = async function raiseHand() {
+        showRaisedHand(app.state.peerId);
+        await invokeHub("RaiseHand");
+    };
+
+    app.toggleScreenShare = async function toggleScreenShare() {
+        if (isScreenSharing) {
+            await stopScreenShare();
+            return;
+        }
+
+        await startScreenShare();
+    };
+
+    app.toggleRecording = async function toggleRecording() {
+        if (!window.localStream || window.localStream.getTracks().length === 0) {
+            app.appendSystemMessage?.("There is no local media stream to record.");
+            return;
+        }
+
+        if (!isRecording) {
+            startRecording();
+        } else {
+            stopRecording();
+        }
+
+        await invokeHub("ToggleRecording", isRecording);
+    };
+
+    app.setVideoTileCameraState = setVideoTileCameraState;
+    app.toggleVideoVirtualBackground = toggleVideoVirtualBackground;
+    app.showRaisedHand = showRaisedHand;
+    app.setScreenShareState = setScreenShareState;
+    app.setRecordingState = setRecordingState;
+
+    function addVideoTile(peerId, stream, name, isLocal) {
+        const container = document.createElement("div");
+        container.className = "video-container";
+        container.id = tileId(peerId);
+
+        const video = document.createElement("video");
+        video.autoplay = true;
+        video.playsInline = true;
+        video.muted = isLocal;
+        video.srcObject = stream;
+
+        if (!isLocal) {
+            video.addEventListener("loadedmetadata", () => {
+                video.play().catch(error => console.warn("Remote video playback was blocked.", error));
+            });
+        }
+
+        const label = document.createElement("div");
+        label.className = "video-label";
+        label.textContent = isLocal ? `${name} (you)` : name;
+
+        const cameraOff = createStatusOverlay("camera-off-overlay", "fa-video-slash", "Camera off");
+        const emptyState = createStatusOverlay("empty-video-state", "fa-user", "No video available");
+        const handBadge = createIconBadge("hand-badge", "fa-hand");
+
+        const recIndicator = document.createElement("div");
+        recIndicator.className = "rec-indicator";
+
+        container.append(video, cameraOff, emptyState, handBadge, recIndicator, label);
+        videoGrid.appendChild(container);
+
+        const hasVideo = stream?.getVideoTracks().length > 0;
+        container.classList.toggle("no-video", !hasVideo);
+        setVideoTileCameraState(peerId, !hasVideo || stream.getVideoTracks()[0].enabled);
         updateVideoGridLayout();
     }
-}
 
-/**
- * Mute/unmute mic.
- */
-function toggleMute() {
-    const t = window.localStream?.getAudioTracks()[0];
-    if (t) {
-        t.enabled = !t.enabled;
-        updateStatusIndicator();
+    function setVideoTileCameraState(peerId, isEnabled) {
+        const container = document.getElementById(tileId(peerId));
+
+        if (container) {
+            container.classList.toggle("camera-off", !isEnabled);
+        }
     }
-}
 
-/**
- * Toggles camera on/off and notifies peers.
- */
-function toggleCamera() {
-    const videoTrack = window.localStream?.getVideoTracks()[0];
-    if (!videoTrack) return;
+    function createStatusOverlay(className, iconName, text) {
+        const overlay = document.createElement("div");
+        const icon = document.createElement("i");
+        const label = document.createElement("span");
 
-    // 1) Toggle our own camera
-    videoTrack.enabled = !videoTrack.enabled;
-    updateStatusIndicator();
+        overlay.className = className;
+        icon.className = `fa-solid ${iconName}`;
+        icon.setAttribute("aria-hidden", "true");
+        label.textContent = text;
 
-    // 2) Tell everyone else to toggle our tile
-    connection.invoke("ToggleCamera", roomName, peerIdAvailable)
-        .catch(console.error);
-}
-
-/**
- * Tell server to toggle virtual background blur.
- */
-function toggleVirtualBackground() {
-    connection.invoke("ToggleVirtualBackground", roomName, peerIdAvailable)
-        .catch(console.error);
-}
-
-/**
- * Raise hand in UI & notify peers.
- */
-function raiseHand() {
-    if (!connection || !peerIdAvailable) return;
-    connection.invoke("RaiseHand", roomName, peerIdAvailable)
-        .then(() => {
-            const tile = document.getElementById(`container-${peerIdAvailable}`);
-            if (tile) {
-                tile.classList.add("hand-raised");
-                setTimeout(() => tile.classList.remove("hand-raised"), 5000);
-            }
-        })
-        .catch(console.error);
-}
-
-/**
- * Central toggle: calls start or stop under the hood.
- */
-async function toggleScreenShare() {
-    if (!isScreenSharing) {
-        await startScreenShare();
-        isScreenSharing = true;
-        document.getElementById("screenShareBtnLabel").innerText = "Stop Sharing";
-    } else {
-        await stopScreenShare();
-        isScreenSharing = false;
-        document.getElementById("screenShareBtnLabel").innerText = "Share Screen";
+        overlay.append(icon, label);
+        return overlay;
     }
-}
 
-/**
- * Start screen share, swap tracks on each connection.
- */
-async function startScreenShare() {
-    try {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        const screenTrack = screenStream.getVideoTracks()[0];
-        const micTrack = window.localStream.getAudioTracks()[0];
-        originalStream = window.localStream;
+    function createIconBadge(className, iconName) {
+        const badge = document.createElement("div");
+        const icon = document.createElement("i");
 
-        // auto‑toggle back if user uses browser UI to stop
-        screenTrack.onended = () => toggleScreenShare();
+        badge.className = className;
+        icon.className = `fa-solid ${iconName}`;
+        icon.setAttribute("aria-hidden", "true");
+        badge.appendChild(icon);
 
-        mediaConnections.forEach(conn => {
-            const sender = conn.peerConnection.getSenders()
-                .find(s => s.track?.kind === "video");
-            if (sender) sender.replaceTrack(screenTrack);
-        });
-
-        window.localStream = new MediaStream([screenTrack, micTrack]);
-        document.querySelector(`#container-${peerIdAvailable} video`)
-            .srcObject = window.localStream;
-
-        connection.invoke("StartScreenShare", roomName, peerIdAvailable)
-            .catch(console.error);
-
-    } catch (err) {
-        console.error("Screen share failed:", err);
+        return badge;
     }
-}
 
-/**
- * Stop screen share and restore camera.
- */
-async function stopScreenShare() {
-    try {
-        if (!originalStream) return;
+    function toggleVideoVirtualBackground(peerId) {
+        const video = document.querySelector(`#${cssEscape(tileId(peerId))} video`);
+
+        if (video) {
+            video.classList.toggle("virtual-bg");
+        }
+    }
+
+    function showRaisedHand(peerId) {
+        const container = document.getElementById(tileId(peerId));
+
+        if (!container) {
+            return;
+        }
+
+        container.classList.add("hand-raised");
+        window.setTimeout(() => container.classList.remove("hand-raised"), 5000);
+    }
+
+    function setScreenShareState(peerId, isSharing) {
+        document.getElementById(tileId(peerId))?.classList.toggle("sharing-screen", isSharing);
+    }
+
+    function setRecordingState(peerId, recording) {
+        document.getElementById(tileId(peerId))?.classList.toggle("is-recording", recording);
+    }
+
+    async function startScreenShare() {
+        const currentStream = window.localStream;
+
+        if (!currentStream) {
+            app.appendSystemMessage?.("Start your camera or microphone before sharing your screen.");
+            return;
+        }
+
+        try {
+            screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+            const screenTrack = screenStream.getVideoTracks()[0];
+            const audioTrack = currentStream.getAudioTracks()[0];
+
+            originalStream = currentStream;
+            window.localStream = new MediaStream([screenTrack, audioTrack].filter(Boolean));
+            app.replaceVideoTrackForPeers(screenTrack);
+            setLocalVideoStream(window.localStream);
+            setScreenShareState(app.state.peerId, true);
+            setScreenShareButton(true);
+            isScreenSharing = true;
+
+            screenTrack.onended = () => {
+                if (isScreenSharing) {
+                    app.toggleScreenShare();
+                }
+            };
+
+            await invokeHub("StartScreenShare");
+        } catch (error) {
+            console.warn("Screen share was cancelled or blocked.", error);
+            app.appendSystemMessage?.("Screen sharing was cancelled or blocked.");
+        }
+    }
+
+    async function stopScreenShare() {
+        if (!originalStream) {
+            return;
+        }
+
         const cameraTrack = originalStream.getVideoTracks()[0];
-        const micTrack = originalStream.getAudioTracks()[0];
-
-        mediaConnections.forEach(conn => {
-            const sender = conn.peerConnection.getSenders()
-                .find(s => s.track?.kind === "video");
-            if (sender) sender.replaceTrack(cameraTrack);
+        window.localStream.getVideoTracks().forEach(track => {
+            if (track !== cameraTrack) {
+                track.stop();
+            }
         });
 
-        window.localStream = new MediaStream([cameraTrack, micTrack]);
-        document.querySelector(`#container-${peerIdAvailable} video`)
-            .srcObject = window.localStream;
-
-        connection.invoke("StopScreenShare", roomName, peerIdAvailable)
-            .catch(console.error);
-
+        window.localStream = originalStream;
         originalStream = null;
+        screenStream = null;
 
-    } catch (err) {
-        console.error("Stop screen share failed:", err);
+        if (cameraTrack) {
+            app.replaceVideoTrackForPeers(cameraTrack);
+        }
+
+        setLocalVideoStream(window.localStream);
+        setScreenShareState(app.state.peerId, false);
+        setScreenShareButton(false);
+        isScreenSharing = false;
+        app.updateStatusIndicator();
+
+        await invokeHub("StopScreenShare");
     }
-}
 
-/**
- * Record/unrecord and download.
- */
-function toggleRecording() {
-    if (!window.localStream) return;
-    if (!isRecording) {
+    function startRecording() {
+        const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+            ? "video/webm;codecs=vp9"
+            : "video/webm";
+
         recordedChunks = [];
-        mediaRecorder = new MediaRecorder(window.localStream);
-        mediaRecorder.ondataavailable = e => { if (e.data.size) recordedChunks.push(e.data); };
-        mediaRecorder.onstop = () => {
-            const blob = new Blob(recordedChunks, { type: "video/webm" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `recording-${Date.now()}.webm`;
-            document.body.append(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
+        mediaRecorder = new MediaRecorder(window.localStream, { mimeType });
+        mediaRecorder.ondataavailable = event => {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
         };
+        mediaRecorder.onstop = downloadRecording;
         mediaRecorder.start();
+
         isRecording = true;
-        document.getElementById("recordBtnLabel").innerText = "Stop";
-    } else {
-        mediaRecorder.stop();
-        isRecording = false;
-        document.getElementById("recordBtnLabel").innerText = "Record";
+        setRecordingState(app.state.peerId, true);
+        document.getElementById("recordBtnLabel").textContent = "Stop";
+        document.getElementById("recordButton")?.classList.add("is-active");
     }
-    connection.invoke("ToggleRecording", roomName, peerIdAvailable)
-        .catch(console.error);
-}
 
-/**
- * Lay out the video grid.
- */
-function updateVideoGridLayout() {
-    const count = videoGrid.childElementCount;
-    const cols = count <= 1 ? 1 : count <= 4 ? 2 : Math.ceil(Math.sqrt(count));
-    videoGrid.style.display = "grid";
-    videoGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-    videoGrid.style.gridAutoRows = "1fr";
-    videoGrid.style.gap = "10px";
-}
+    function stopRecording() {
+        mediaRecorder?.stop();
+        isRecording = false;
+        setRecordingState(app.state.peerId, false);
+        document.getElementById("recordBtnLabel").textContent = "Record";
+        document.getElementById("recordButton")?.classList.remove("is-active");
+    }
 
-/**
- * Get camera+mic and show local preview.
- */
-function initLocalStream(yourName) {
-    const constraints = {
-        audio: true,
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 15, max: 30 } }
-    };
-    navigator.mediaDevices.getUserMedia(constraints)
-        .then(stream => {
-            window.localStream = stream;
-            addLocalVideo(yourName);
-            updateStatusIndicator();
-            const track = stream.getVideoTracks()[0];
-            track.applyConstraints({ frameRate: { ideal: 15 } }).catch(console.warn);
-        })
-        .catch(err => console.error("getUserMedia failed:", err));
-}
+    function downloadRecording() {
+        const blob = new Blob(recordedChunks, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
 
-/**
- * Outgoing call helper.
- */
-function callPeer(peerId, name) {
-    if (!window.localStream || !peerId) return;
-    const conn = peer.call(peerId, window.localStream, { metadata: { username } });
-    mediaConnections.push(conn);
-    conn.on("stream", s => addRemoteVideo(peerId, s, name));
-    conn.on("close", () => removeVideoContainer(peerId));
-    conn.on("error", e => console.error("Call error:", e));
-}
+        anchor.href = url;
+        anchor.download = `collaboard-recording-${Date.now()}.webm`;
+        document.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+    }
 
-// Incoming calls must also be tracked
-peer.on("call", conn => {
-    conn.answer(window.localStream);
-    mediaConnections.push(conn);
-    conn.on("stream", s => {
-        const caller = conn.metadata?.username || peerUsernameMap[conn.peer] || conn.peer.slice(0, 5);
-        addRemoteVideo(conn.peer, s, caller);
-    });
-    conn.on("close", () => removeVideoContainer(conn.peer));
-});
+    function setLocalVideoStream(stream) {
+        const video = document.querySelector(`#${cssEscape(tileId(app.state.peerId))} video`);
+
+        if (video) {
+            video.srcObject = stream;
+        }
+    }
+
+    function setScreenShareButton(sharing) {
+        document.getElementById("screenShareBtnLabel").textContent = sharing ? "Stop" : "Share";
+        document.getElementById("screenShareButton")?.classList.toggle("is-active", sharing);
+    }
+
+    function updateVideoGridLayout() {
+        const count = Math.max(videoGrid.childElementCount, 1);
+        const columns = count <= 1 ? 1 : count <= 4 ? 2 : Math.ceil(Math.sqrt(count));
+
+        videoGrid.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+    }
+
+    async function invokeHub(method, ...args) {
+        const connection = app.state.connection;
+
+        if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
+            app.appendSystemMessage?.("The room connection is not ready yet.");
+            return;
+        }
+
+        try {
+            await connection.invoke(method, ...args);
+        } catch (error) {
+            console.error(`Hub method ${method} failed.`, error);
+            app.appendSystemMessage?.("That action could not be sent. Please try again.");
+        }
+    }
+
+    function tileId(peerId) {
+        return `container-${peerId}`;
+    }
+
+    function cssEscape(value) {
+        return window.CSS?.escape ? CSS.escape(value) : value.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+    }
+})();

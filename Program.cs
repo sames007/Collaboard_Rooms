@@ -1,81 +1,68 @@
-﻿using SignalRChat.Hubs;
+using Microsoft.AspNetCore.HttpOverrides;
+using CollaboardRooms.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ------------------------------------------------------
-// 1) Configure CORS to allow only specific front-end origins
-// ------------------------------------------------------
-// This policy permits cross-origin requests from the
-// production and local development URLs, allows any HTTP header
-// and method, and supports credentialed (cookie or token) requests.
-builder.Services.AddCors(options =>
+var renderPort = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(renderPort))
 {
-    options.AddDefaultPolicy(policy =>
-        policy.WithOrigins(
-                "https://collaboard-djb7e8caezeqbnef.centralus-01.azurewebsites.net", // Production SPA URL
-                "http://localhost:5000"                                             // Localhost development
-            )
-            .AllowAnyHeader()    // Allow all request headers
-            .AllowAnyMethod()    // Allow GET, POST, etc.
-            .AllowCredentials()  // Allow cookies or other credentials
-    );
+    builder.WebHost.UseUrls($"http://0.0.0.0:{renderPort}");
+}
+
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = builder.Environment.IsDevelopment();
+    options.MaximumReceiveMessageSize = 32 * 1024;
 });
 
-// ------------------------------------------------------
-// 2) Register SignalR services and Azure SignalR backplane
-// ------------------------------------------------------
-// - AddSignalR(): Registers the core SignalR services.
-// - AddAzureSignalR(): Connects the app to Azure SignalR Service
-//   using the "Azure:SignalR:ConnectionString" setting.
-// This enables scalable, multi-instance real-time messaging.
-builder.Services
-    .AddSignalR()          // Adds SignalR core services
-    .AddAzureSignalR();    // Configures Azure SignalR Service integration
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
-// Build the WebApplication
 var app = builder.Build();
 
-// ------------------------------------------------------
-// 3) Serve static files for the Single Page Application
-// ------------------------------------------------------
-// UseDefaultFiles(): Rewrites requests for "/" to "/index.html" (first matching default file).
-// UseStaticFiles(): Serves static assets from the "wwwroot" folder.
-// Order is important: DefaultFiles must come before StaticFiles.
-app.UseDefaultFiles();    // URL rewriter for default documents (index.html, etc.) :contentReference[oaicite:4]{index=4}
-app.UseStaticFiles();     // Enables serving .js, .css, images, etc.
+app.UseForwardedHeaders();
 
-// ------------------------------------------------------
-// 4) Enable routing middleware
-// ------------------------------------------------------
-// This adds route matching to the middleware pipeline.
-// Must be called before mapping endpoints.
-app.UseRouting();
-
-// ------------------------------------------------------
-// 5) Apply the CORS policy to all incoming requests
-// ------------------------------------------------------
-app.UseCors();
-
-// ------------------------------------------------------
-// 6) Map the SignalR ChatHub endpoint via Azure SignalR
-// ------------------------------------------------------
-// UseAzureSignalR(): Intercepts SignalR negotiate requests and
-// routes them through the Azure SignalR Service.
-// MapHub<ChatHub>("/chatHub"): Defines the client-accessible
-// URL for the ChatHub.
-app.UseAzureSignalR(routes =>
+if (!app.Environment.IsDevelopment())
 {
-    routes.MapHub<ChatHub>("/chatHub");
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
+
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+
+    headers.TryAdd("X-Content-Type-Options", "nosniff");
+    headers.TryAdd("X-Frame-Options", "DENY");
+    headers.TryAdd("Referrer-Policy", "strict-origin-when-cross-origin");
+    headers.TryAdd("Permissions-Policy", "camera=(self), microphone=(self), display-capture=(self), geolocation=()");
+    headers.TryAdd(
+        "Content-Security-Policy",
+        string.Join(
+            " ",
+            "default-src 'self';",
+            "base-uri 'self';",
+            "object-src 'none';",
+            "frame-ancestors 'none';",
+            "script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.whiteboard.team;",
+            "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;",
+            "font-src 'self' data: https://cdnjs.cloudflare.com;",
+            "img-src 'self' data: blob:;",
+            "media-src 'self' blob:;",
+            "connect-src 'self' ws: wss: https://0.peerjs.com https://*.peerjs.com https://www.whiteboard.team;",
+            "frame-src https://www.whiteboard.team;"));
+
+    await next();
 });
 
-// ------------------------------------------------------
-// 7) SPA fallback for client-side routing
-// ------------------------------------------------------
-// Sends any non-API or non-static-file request back to index.html
-// so that the SPA router can handle the URL. :contentReference[oaicite:5]{index=5}
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.MapHub<ChatHub>("/chatHub");
 app.MapFallbackToFile("index.html");
 
-// ------------------------------------------------------
-// 8) Run the application
-// ------------------------------------------------------
 app.Run();

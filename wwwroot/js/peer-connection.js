@@ -1,37 +1,70 @@
-﻿// --- js/peer-connection.js ---
-// Manages initiating and handling peer-to-peer calls using WebRTC (via PeerJS).
+(() => {
+    const app = window.Collaboard = window.Collaboard || {};
+    const mediaConnections = new Map();
 
-/**
- * Initiates a call to a remote peer and sets up event handlers for their stream.
- *
- * @param {string} remoteId   - The PeerJS ID of the remote peer to call.
- * @param {string} remoteName - The username of the remote peer (for UI labels).
- */
-function callPeer(remoteId, remoteName) {
-    // Don't call yourself if your own peer ID is passed in
-    if (remoteId === peerIdAvailable) return;
+    app.callPeer = function callPeer(remoteId, remoteName) {
+        const { state } = app;
 
-    // ---------------------------------------------------------------------------
-    // 1) Keep track of the remote peer's username for UI purposes
-    peerUsernameMap[remoteId] = remoteName;
+        if (!state.peer || !remoteId || remoteId === state.peerId || mediaConnections.has(remoteId)) {
+            return;
+        }
 
-    // ---------------------------------------------------------------------------
-    // 2) Place the call, sending your local media stream and your username as metadata
-    const c = peer.call(remoteId, localStream, {
-        metadata: { username: username }
-    });
+        const stream = window.localStream ?? new MediaStream();
+        const call = state.peer.call(remoteId, stream, {
+            metadata: { username: state.username }
+        });
 
-    // ---------------------------------------------------------------------------
-    // 3) When the remote stream is received:
-    //    - Add a video element for this user
-    //    - Label it with the remoteName to identify the speaker
-    c.on("stream", stream => {
-        addRemoteVideo(remoteId, stream, remoteName);
-    });
+        trackConnection(remoteId, call);
+        call.on("stream", remoteStream => app.addRemoteVideo(remoteId, remoteStream, remoteName));
+    };
 
-    // Remove the video element when the call ends
-    c.on("close", () => removeVideoContainer(remoteId));
+    app.handleIncomingCall = function handleIncomingCall(call) {
+        const { state } = app;
+        const callerName = call.metadata?.username ||
+            state.peerUsernames.get(call.peer) ||
+            call.peer.slice(0, 8);
 
-    // Log any errors during the call lifecycle
-    c.on("error", e => console.error("Call error:", e));
-}
+        state.peerUsernames.set(call.peer, callerName);
+        call.answer(window.localStream ?? new MediaStream());
+        trackConnection(call.peer, call);
+        call.on("stream", stream => app.addRemoteVideo(call.peer, stream, callerName));
+    };
+
+    app.replaceVideoTrackForPeers = function replaceVideoTrackForPeers(videoTrack) {
+        mediaConnections.forEach(call => {
+            const sender = call.peerConnection
+                ?.getSenders()
+                .find(candidate => candidate.track?.kind === "video");
+
+            if (sender) {
+                sender.replaceTrack(videoTrack).catch(error => {
+                    console.error("Unable to replace peer video track.", error);
+                });
+            }
+        });
+    };
+
+    app.closeMediaConnection = function closeMediaConnection(peerId) {
+        const call = mediaConnections.get(peerId);
+
+        if (call) {
+            call.close();
+            mediaConnections.delete(peerId);
+        }
+    };
+
+    function trackConnection(peerId, call) {
+        mediaConnections.set(peerId, call);
+
+        call.on("close", () => {
+            mediaConnections.delete(peerId);
+            app.removeVideoContainer(peerId);
+        });
+
+        call.on("error", error => {
+            console.error("Peer media connection error.", error);
+            mediaConnections.delete(peerId);
+            app.removeVideoContainer(peerId);
+        });
+    }
+})();
