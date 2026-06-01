@@ -1,6 +1,16 @@
 # Collaboard Rooms
 
-Collaboard Rooms is a real-time video collaboration app built with ASP.NET Core SignalR, PeerJS/WebRTC, chat, screen sharing, local recording, and an embedded whiteboard. The app is designed to run as one full-stack web service on Render and uses PeerJS Cloud for WebRTC peer discovery.
+Collaboard Rooms is a real-time video collaboration app built with ASP.NET Core SignalR, PeerJS/WebRTC, MediaPipe Selfie Segmentation, chat, screen sharing, local recording, and an embedded whiteboard. The app is designed to run as one full-stack web service on Render and uses PeerJS Cloud for WebRTC peer discovery.
+
+## Live Demo
+
+Production URL:
+
+```text
+https://collaboard-rooms.onrender.com/index.html#room=resume-demo
+```
+
+Render free services may take 30-60 seconds to wake up after inactivity.
 
 ## Features
 
@@ -8,10 +18,19 @@ Collaboard Rooms is a real-time video collaboration app built with ASP.NET Core 
 - Peer-to-peer audio and video calls through PeerJS/WebRTC.
 - PeerJS Cloud signaling with the default PeerJS client configuration.
 - Chat with server-side room validation and message length limits.
-- Camera, microphone, screen sharing, selectable video background effects, raise-hand, and local recording controls.
+- Camera, microphone, screen sharing, MediaPipe virtual backgrounds, raise-hand, and local recording controls.
+- Five bundled blue/black background scenes plus a privacy blur option.
 - Embedded whiteboard scoped to the current room.
 - Responsive UI for desktop and mobile-sized screens.
 - Docker-based deployment that works cleanly on Render.
+
+## Screenshots
+
+![Walkthrough](docs/screenshots/walkthrough.gif)
+
+![Join room](docs/screenshots/01-join-room.png)
+
+![Background picker](docs/screenshots/03-background-picker.png)
 
 ## Requirements
 
@@ -42,7 +61,7 @@ To test by yourself:
 1. Open one room link in a normal browser window.
 2. Open the same link in an incognito/private window, a second browser profile, or a phone.
 3. Join with two different names.
-4. Use the chat, mute, camera, background effects, screen share, raise-hand, recording, and whiteboard controls.
+4. Use the chat, mute, camera, MediaPipe background picker, screen share, raise-hand, recording, and whiteboard controls.
 
 Some browsers only let one tab use the same camera at a time. If the second tab cannot access the camera, use your phone or another browser profile for the most reliable video test.
 
@@ -87,6 +106,7 @@ https://your-render-service.onrender.com/index.html#room=team-demo
 - User-provided chat and labels are inserted with text APIs to avoid script injection.
 - The hub derives room, peer, and username state from the connected client instead of trusting client-supplied room values for actions.
 - Video background effect names are validated on the server before they are broadcast to other clients.
+- MediaPipe runtime files and background images are served locally from `wwwroot` so camera frames do not need to be sent to a third-party background service.
 - The app sends security headers, including a content security policy, `nosniff`, frame protection, referrer policy, and browser permission limits.
 - Free PeerJS Cloud is convenient for demos. For a production app, use a private PeerServer with authentication and abuse controls.
 

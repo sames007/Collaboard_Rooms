@@ -7,6 +7,7 @@
 
     <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@9.0.6/dist/browser/signalr.min.js"></script>
+    <script src="vendor/mediapipe/selfie_segmentation/selfie_segmentation.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
     <script src="https://www.whiteboard.team/dist/api.js"></script>
 
@@ -90,32 +91,62 @@
                 <i class="fa-solid fa-image" aria-hidden="true"></i>
                 <span>Background</span>
             </button>
-            <div id="backgroundMenu" class="background-menu" role="menu" aria-label="Background effects" hidden>
-                <p class="background-menu-title">Background effects</p>
+            <div id="backgroundMenu" class="background-menu" role="menu" aria-label="Virtual backgrounds" hidden>
+                <div class="background-menu-header">
+                    <p class="background-menu-title">Virtual backgrounds</p>
+                    <span class="background-engine">MediaPipe</span>
+                </div>
+                <div class="background-options">
                 <button class="background-option is-active" type="button" role="menuitemradio" aria-checked="true" data-background-effect="none">
                     <span class="background-swatch swatch-none" aria-hidden="true"></span>
-                    <span>None</span>
+                    <span class="background-copy">
+                        <span class="background-name">Original</span>
+                        <span class="background-detail">Camera feed</span>
+                    </span>
                 </button>
                 <button class="background-option" type="button" role="menuitemradio" aria-checked="false" data-background-effect="blur">
                     <span class="background-swatch swatch-blur" aria-hidden="true"></span>
-                    <span>Soft blur</span>
+                    <span class="background-copy">
+                        <span class="background-name">Soft blur</span>
+                        <span class="background-detail">Private room</span>
+                    </span>
                 </button>
                 <button class="background-option" type="button" role="menuitemradio" aria-checked="false" data-background-effect="blue-studio">
                     <span class="background-swatch swatch-blue-studio" aria-hidden="true"></span>
-                    <span>Blue studio</span>
+                    <span class="background-copy">
+                        <span class="background-name">Blue studio</span>
+                        <span class="background-detail">Clean demo look</span>
+                    </span>
                 </button>
-                <button class="background-option" type="button" role="menuitemradio" aria-checked="false" data-background-effect="midnight-grid">
-                    <span class="background-swatch swatch-midnight-grid" aria-hidden="true"></span>
-                    <span>Midnight grid</span>
+                <button class="background-option" type="button" role="menuitemradio" aria-checked="false" data-background-effect="city-night">
+                    <span class="background-swatch swatch-city-night" aria-hidden="true"></span>
+                    <span class="background-copy">
+                        <span class="background-name">City night</span>
+                        <span class="background-detail">Window skyline</span>
+                    </span>
                 </button>
-                <button class="background-option" type="button" role="menuitemradio" aria-checked="false" data-background-effect="neon-focus">
-                    <span class="background-swatch swatch-neon-focus" aria-hidden="true"></span>
-                    <span>Neon focus</span>
+                <button class="background-option" type="button" role="menuitemradio" aria-checked="false" data-background-effect="ocean-glass">
+                    <span class="background-swatch swatch-ocean-glass" aria-hidden="true"></span>
+                    <span class="background-copy">
+                        <span class="background-name">Ocean glass</span>
+                        <span class="background-detail">Calm horizon</span>
+                    </span>
                 </button>
-                <button class="background-option" type="button" role="menuitemradio" aria-checked="false" data-background-effect="cool-mono">
-                    <span class="background-swatch swatch-cool-mono" aria-hidden="true"></span>
-                    <span>Cool mono</span>
+                <button class="background-option" type="button" role="menuitemradio" aria-checked="false" data-background-effect="focus-room">
+                    <span class="background-swatch swatch-focus-room" aria-hidden="true"></span>
+                    <span class="background-copy">
+                        <span class="background-name">Focus room</span>
+                        <span class="background-detail">Modern workspace</span>
+                    </span>
                 </button>
+                <button class="background-option" type="button" role="menuitemradio" aria-checked="false" data-background-effect="aurora-grid">
+                    <span class="background-swatch swatch-aurora-grid" aria-hidden="true"></span>
+                    <span class="background-copy">
+                        <span class="background-name">Aurora grid</span>
+                        <span class="background-detail">High contrast</span>
+                    </span>
+                </button>
+                </div>
             </div>
         </div>
         <button id="raiseHandButton" type="button" title="Raise hand">

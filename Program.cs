@@ -48,12 +48,13 @@ app.Use(async (context, next) =>
             "base-uri 'self';",
             "object-src 'none';",
             "frame-ancestors 'none';",
-            "script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.whiteboard.team;",
+            "script-src 'self' 'wasm-unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.whiteboard.team;",
             "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;",
             "font-src 'self' data: https://cdnjs.cloudflare.com;",
             "img-src 'self' data: blob:;",
             "media-src 'self' blob:;",
             "connect-src 'self' ws: wss: https://0.peerjs.com https://*.peerjs.com https://www.whiteboard.team;",
+            "worker-src 'self' blob:;",
             "frame-src https://www.whiteboard.team;"));
 
     await next();

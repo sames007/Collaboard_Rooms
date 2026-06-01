@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="Focus room background">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#081527"/>
+      <stop offset="0.58" stop-color="#0b1b33"/>
+      <stop offset="1" stop-color="#020817"/>
+    </linearGradient>
+    <radialGradient id="lamp" cx="50%" cy="12%" r="45%">
+      <stop offset="0" stop-color="#93c5fd" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#020817" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#wall)"/>
+  <rect width="1600" height="900" fill="url(#lamp)"/>
+  <rect x="130" y="170" width="460" height="360" rx="18" fill="#020817" opacity="0.54"/>
+  <rect x="1010" y="145" width="420" height="390" rx="18" fill="#020817" opacity="0.48"/>
+  <g fill="#1e3a5f">
+    <rect x="170" y="230" width="380" height="18" rx="9"/>
+    <rect x="170" y="330" width="380" height="18" rx="9"/>
+    <rect x="170" y="430" width="380" height="18" rx="9"/>
+    <rect x="1050" y="220" width="340" height="18" rx="9"/>
+    <rect x="1050" y="340" width="340" height="18" rx="9"/>
+    <rect x="1050" y="460" width="340" height="18" rx="9"/>
+  </g>
+  <g fill="#38bdf8" opacity="0.32">
+    <rect x="192" y="270" width="56" height="60" rx="10"/>
+    <rect x="282" y="265" width="72" height="65" rx="10"/>
+    <rect x="405" y="278" width="118" height="50" rx="10"/>
+    <rect x="1073" y="260" width="82" height="80" rx="10"/>
+    <rect x="1190" y="272" width="60" height="68" rx="10"/>
+    <rect x="1300" y="252" width="74" height="88" rx="10"/>
+  </g>
+  <path d="M0 625h1600v275H0Z" fill="#030712" opacity="0.88"/>
+  <path d="M452 610h696l82 290H370Z" fill="#07111f"/>
+  <path d="M435 610h730" stroke="#38bdf8" stroke-opacity="0.28" stroke-width="6"/>
+</svg>

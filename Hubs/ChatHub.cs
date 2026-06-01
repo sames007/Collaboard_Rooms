@@ -20,9 +20,10 @@ public sealed class ChatHub : Hub
         "none",
         "blur",
         "blue-studio",
-        "midnight-grid",
-        "neon-focus",
-        "cool-mono"
+        "city-night",
+        "ocean-glass",
+        "focus-room",
+        "aurora-grid"
     };
     private static readonly Dictionary<string, HashSet<string>> RoomPeers = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, string> ConnectionPeerMap = new(StringComparer.Ordinal);
