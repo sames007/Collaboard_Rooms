@@ -80,16 +80,6 @@ If the Render service has been idle, the first load can take 30-60 seconds while
 - If virtual backgrounds do not start, make sure the browser has camera permission. MediaPipe needs an active camera track before it can replace the background.
 - If the camera permission was blocked, reset the browser permission for the site, refresh the room, and join again.
 
-## Free Deployment Plan
-
-Recommended free stack:
-
-- Render: full app hosting as a free web service.
-- PeerJS Cloud: free WebRTC signaling used by the PeerJS default client.
-- GitHub: source control and Render deployment source.
-
-Render free web services can spin down after inactivity, so the first request after a quiet period may be slower. That is acceptable for a resume/demo project, but it is not production-grade hosting.
-
 ## Deploying To Render
 
 1. Push this repository to GitHub.
