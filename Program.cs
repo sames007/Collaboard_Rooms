@@ -62,6 +62,7 @@ app.Use(async (context, next) =>
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+app.MapGet("/healthz", () => Results.Ok("ok"));
 app.MapHub<ChatHub>("/chatHub");
 app.MapFallbackToFile("index.html");
 

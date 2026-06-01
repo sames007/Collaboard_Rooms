@@ -1,5 +1,6 @@
 (() => {
     const app = window.Collaboard = window.Collaboard || {};
+    const maxConnectionAttempts = 8;
 
     const state = {
         roomName: getRoomName(),
@@ -48,23 +49,33 @@
         state.started = true;
         setConnectionStatus("Connecting...");
 
+        state.connection = new signalR.HubConnectionBuilder()
+            .withUrl("/chatHub")
+            .withAutomaticReconnect()
+            .configureLogging(signalR.LogLevel.Warning)
+            .build();
+
+        registerSignalRHandlers(state.connection);
+        await startConnectionWithRetry();
+    }
+
+    async function startConnectionWithRetry(attempt = 1) {
         try {
-            state.connection = new signalR.HubConnectionBuilder()
-                .withUrl("/chatHub")
-                .withAutomaticReconnect()
-                .configureLogging(signalR.LogLevel.Warning)
-                .build();
-
-            registerSignalRHandlers(state.connection);
-
             await state.connection.start();
             setConnectionStatus("Connected");
-
             initializePeer();
         } catch (error) {
-            console.error("Unable to start SignalR connection.", error);
-            setConnectionStatus("Connection failed", true);
-            app.appendSystemMessage?.("Unable to connect to the room. Refresh and try again.");
+            console.warn(`SignalR connection attempt ${attempt} failed.`, error);
+
+            if (attempt >= maxConnectionAttempts) {
+                setConnectionStatus("Connection failed", true);
+                app.appendSystemMessage?.("Unable to connect to the room. Refresh and try again.");
+                return;
+            }
+
+            const delay = Math.min(1000 * 2 ** (attempt - 1), 10000);
+            setConnectionStatus(`Connecting... retry ${attempt + 1}`);
+            window.setTimeout(() => startConnectionWithRetry(attempt + 1), delay);
         }
     }
 
@@ -144,7 +155,12 @@
 
     function getRoomName() {
         const params = new URLSearchParams(window.location.search);
-        const room = params.get("room")?.trim();
+        const hash = window.location.hash.startsWith("#")
+            ? window.location.hash.slice(1)
+            : window.location.hash;
+        const hashParams = new URLSearchParams(hash);
+        const room = hashParams.get("room")?.trim() || params.get("room")?.trim();
+
         return room ? room.slice(0, 64) : "TestRoom";
     }
 

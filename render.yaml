@@ -4,6 +4,7 @@ services:
     runtime: docker
     plan: free
     autoDeploy: true
+    healthCheckPath: /healthz
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production

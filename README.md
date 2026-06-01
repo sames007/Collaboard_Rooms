@@ -30,7 +30,7 @@ dotnet run
 Open the URL shown by `dotnet run`, then use a room URL such as:
 
 ```text
-http://localhost:5281/?room=team-demo
+http://localhost:5281/index.html#room=team-demo
 ```
 
 ## Free Deployment Plan
@@ -52,7 +52,13 @@ Render free web services can spin down after inactivity, so the first request af
 5. Select the free plan.
 6. Deploy.
 
-The included `render.yaml` configures the app as a free Docker web service. The app reads Render's `PORT` environment variable automatically.
+The included `render.yaml` configures the app as a free Docker web service. The app reads Render's `PORT` environment variable automatically and exposes `/healthz` for Render health checks.
+
+Use hash-based room links on Render to avoid provider routing issues with query strings:
+
+```text
+https://your-render-service.onrender.com/index.html#room=team-demo
+```
 
 ## Security Notes
 
@@ -70,10 +76,10 @@ Useful checks before deploying:
 dotnet build CollaboardRooms.csproj
 dotnet format CollaboardRooms.sln --verify-no-changes
 dotnet list CollaboardRooms.csproj package --vulnerable --include-transitive --source https://api.nuget.org/v3/index.json
-node --check wwwroot/js/app.js
-node --check wwwroot/js/peer-connection.js
-node --check wwwroot/js/video-controls.js
-node --check wwwroot/js/ui-controls.js
-node --check wwwroot/js/whiteboard.js
-node --check wwwroot/js/chat.js
+node --check wwwroot/js/rooms-app.js
+node --check wwwroot/js/rooms-peer-connection.js
+node --check wwwroot/js/rooms-video-controls.js
+node --check wwwroot/js/rooms-ui-controls.js
+node --check wwwroot/js/rooms-whiteboard.js
+node --check wwwroot/js/rooms-chat.js
 ```
