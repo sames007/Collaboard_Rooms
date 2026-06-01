@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
     <script src="https://www.whiteboard.team/dist/api.js"></script>
 
-    <link rel="stylesheet" href="rooms.css?v=20260601-mobile-ui-fix" />
+    <link rel="stylesheet" href="rooms.css?v=20260601-panel-bg-fix" />
 </head>
 <body>
     <div id="usernameModal" role="dialog" aria-modal="true" aria-labelledby="usernameTitle">
@@ -51,9 +51,14 @@
 
     <aside id="dropdownPanel" class="dropdown-panel" aria-label="Collaboration panel">
         <div id="panelResizeHandle" class="panel-resize-handle" aria-hidden="true"></div>
-        <div class="tabs" role="tablist" aria-label="Collaboration tools">
-            <button id="chatTab" class="tab-btn active" type="button" role="tab" aria-selected="true" aria-controls="chatPanel">Chat</button>
-            <button id="whiteboardTab" class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="whiteboardPanel">Whiteboard</button>
+        <div class="panel-header">
+            <div class="tabs" role="tablist" aria-label="Collaboration tools">
+                <button id="chatTab" class="tab-btn active" type="button" role="tab" aria-selected="true" aria-controls="chatPanel">Chat</button>
+                <button id="whiteboardTab" class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="whiteboardPanel">Whiteboard</button>
+            </div>
+            <button id="panelCloseButton" class="panel-close-button" type="button" aria-label="Close collaboration panel" title="Close panel">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
         </div>
 
         <section id="chatPanel" class="panel-content active" role="tabpanel" aria-labelledby="chatTab">
@@ -162,11 +167,11 @@
         </button>
     </nav>
 
-    <script src="js/rooms-app.js?v=20260601-mobile-ui-fix"></script>
-    <script src="js/rooms-peer-connection.js?v=20260601-mobile-ui-fix"></script>
-    <script src="js/rooms-video-controls.js?v=20260601-mobile-ui-fix"></script>
-    <script src="js/rooms-ui-controls.js?v=20260601-mobile-ui-fix"></script>
-    <script src="js/rooms-whiteboard.js?v=20260601-mobile-ui-fix"></script>
-    <script src="js/rooms-chat.js?v=20260601-mobile-ui-fix"></script>
+    <script src="js/rooms-app.js?v=20260601-panel-bg-fix"></script>
+    <script src="js/rooms-peer-connection.js?v=20260601-panel-bg-fix"></script>
+    <script src="js/rooms-video-controls.js?v=20260601-panel-bg-fix"></script>
+    <script src="js/rooms-ui-controls.js?v=20260601-panel-bg-fix"></script>
+    <script src="js/rooms-whiteboard.js?v=20260601-panel-bg-fix"></script>
+    <script src="js/rooms-chat.js?v=20260601-panel-bg-fix"></script>
 </body>
 </html>

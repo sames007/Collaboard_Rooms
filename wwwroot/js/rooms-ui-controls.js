@@ -12,6 +12,7 @@
     let toastTimer = 0;
 
     bindClick("menuToggle", toggleDropdownPanel);
+    bindClick("panelCloseButton", closeDropdownPanel);
     bindClick("chatTab", () => showPanel("chat"));
     bindClick("whiteboardTab", () => showPanel("whiteboard"));
     bindClick("muteButton", () => app.toggleMute());
@@ -66,13 +67,25 @@
     resizeHandle.addEventListener("pointercancel", endResize);
 
     function toggleDropdownPanel() {
-        const isOpen = dropdownPanel.classList.toggle("open");
+        setDropdownPanelOpen(!dropdownPanel.classList.contains("open"));
+    }
+
+    function closeDropdownPanel() {
+        setDropdownPanelOpen(false);
+    }
+
+    function setDropdownPanelOpen(isOpen) {
         const menuButton = document.getElementById("menuToggle");
 
+        dropdownPanel.classList.toggle("open", isOpen);
         menuButton?.setAttribute("aria-label", isOpen ? "Close collaboration panel" : "Open collaboration panel");
         menuButton?.setAttribute("title", isOpen ? "Close panel" : "Open panel");
         dropdownPanel.setAttribute("aria-hidden", String(!isOpen));
         document.body.classList.toggle("panel-open", isOpen);
+
+        if (!isOpen) {
+            closeBackgroundMenu();
+        }
     }
 
     function showPanel(panel) {
@@ -195,6 +208,7 @@
     dropdownPanel.setAttribute("aria-hidden", "true");
 
     app.toggleDropdownPanel = toggleDropdownPanel;
+    app.closeDropdownPanel = closeDropdownPanel;
     app.showPanel = showPanel;
     app.closeBackgroundMenu = closeBackgroundMenu;
     app.notify = notify;

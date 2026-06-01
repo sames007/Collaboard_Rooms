@@ -2,24 +2,24 @@
   <defs>
     <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#020817"/>
-      <stop offset="0.56" stop-color="#07111f"/>
+      <stop offset="0.58" stop-color="#07111f"/>
       <stop offset="1" stop-color="#01030a"/>
     </linearGradient>
     <linearGradient id="aurora" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#2563eb" stop-opacity="0"/>
-      <stop offset="0.25" stop-color="#38bdf8" stop-opacity="0.56"/>
-      <stop offset="0.55" stop-color="#60a5fa" stop-opacity="0.34"/>
+      <stop offset="0.24" stop-color="#38bdf8" stop-opacity="0.42"/>
+      <stop offset="0.58" stop-color="#60a5fa" stop-opacity="0.24"/>
       <stop offset="1" stop-color="#2563eb" stop-opacity="0"/>
     </linearGradient>
     <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="22"/>
+      <feGaussianBlur stdDeviation="34"/>
     </filter>
   </defs>
   <rect width="1600" height="900" fill="url(#base)"/>
-  <path d="M-30 245c245-148 438-93 619-26 232 87 431 103 667-37 130-77 251-90 374-32v232c-274-84-433-11-602 62-223 95-417 65-625-36-168-82-302-91-433 7Z" fill="url(#aurora)" filter="url(#soft)" opacity="0.92"/>
-  <g opacity="0.22" stroke="#38bdf8">
-    <path d="M0 530h1600M0 590h1600M0 650h1600M0 710h1600M0 770h1600"/>
-    <path d="M155 500 20 900M390 500 310 900M625 500 590 900M860 500 870 900M1095 500 1150 900M1330 500 1430 900"/>
+  <path d="M-60 210c258-120 451-82 650-8 250 93 454 72 700-39 130-59 246-61 370-7v210c-290-72-458-19-632 38-238 78-439 49-650-34-160-63-292-58-438 29Z" fill="url(#aurora)" filter="url(#soft)" opacity="0.86"/>
+  <g opacity="0.12" stroke="#38bdf8" stroke-width="2">
+    <path d="M0 675h1600M0 735h1600M0 795h1600"/>
+    <path d="M160 650 70 900M410 650 360 900M660 650 640 900M910 650 930 900M1160 650 1220 900M1410 650 1530 900"/>
   </g>
-  <path d="M0 522c340 33 574 25 787 0 286-33 511-24 813 30v348H0Z" fill="#020817" opacity="0.5"/>
+  <path d="M0 710c340 24 600 22 835-10 270-36 500-17 765 44v156H0Z" fill="#020817" opacity="0.44"/>
 </svg>

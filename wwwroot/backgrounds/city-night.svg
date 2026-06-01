@@ -2,41 +2,42 @@
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#020817"/>
-      <stop offset="0.5" stop-color="#071b36"/>
-      <stop offset="1" stop-color="#030712"/>
+      <stop offset="0.48" stop-color="#0b1f3d"/>
+      <stop offset="1" stop-color="#02050c"/>
     </linearGradient>
-    <radialGradient id="moon" cx="72%" cy="18%" r="22%">
-      <stop offset="0" stop-color="#dbeafe" stop-opacity="0.88"/>
-      <stop offset="0.18" stop-color="#93c5fd" stop-opacity="0.36"/>
+    <radialGradient id="windowGlow" cx="72%" cy="22%" r="28%">
+      <stop offset="0" stop-color="#bfdbfe" stop-opacity="0.34"/>
+      <stop offset="0.35" stop-color="#60a5fa" stop-opacity="0.16"/>
       <stop offset="1" stop-color="#020817" stop-opacity="0"/>
     </radialGradient>
+    <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="24"/>
+    </filter>
   </defs>
   <rect width="1600" height="900" fill="url(#sky)"/>
-  <rect width="1600" height="900" fill="url(#moon)"/>
-  <g opacity="0.18" stroke="#38bdf8">
-    <path d="M0 210h1600M0 330h1600M0 450h1600M0 570h1600"/>
-    <path d="M220 0v640M460 0v640M700 0v640M940 0v640M1180 0v640M1420 0v640"/>
+  <rect width="1600" height="900" fill="url(#windowGlow)"/>
+  <g opacity="0.18" filter="url(#blur)">
+    <circle cx="1220" cy="190" r="135" fill="#93c5fd"/>
+    <circle cx="430" cy="250" r="95" fill="#38bdf8"/>
   </g>
-  <g fill="#020817">
-    <rect x="40" y="510" width="150" height="390"/>
-    <rect x="220" y="430" width="190" height="470"/>
-    <rect x="445" y="555" width="130" height="345"/>
-    <rect x="610" y="385" width="210" height="515"/>
-    <rect x="855" y="475" width="170" height="425"/>
-    <rect x="1065" y="355" width="235" height="545"/>
-    <rect x="1340" y="505" width="190" height="395"/>
+  <g fill="#020817" opacity="0.86">
+    <rect x="0" y="640" width="160" height="260"/>
+    <rect x="210" y="590" width="170" height="310"/>
+    <rect x="430" y="660" width="130" height="240"/>
+    <rect x="660" y="560" width="190" height="340"/>
+    <rect x="920" y="625" width="155" height="275"/>
+    <rect x="1145" y="540" width="205" height="360"/>
+    <rect x="1400" y="635" width="190" height="265"/>
   </g>
-  <g fill="#60a5fa" opacity="0.52">
-    <rect x="82" y="552" width="34" height="20" rx="4"/>
-    <rect x="258" y="477" width="36" height="22" rx="4"/>
-    <rect x="326" y="536" width="36" height="22" rx="4"/>
-    <rect x="653" y="432" width="42" height="24" rx="4"/>
-    <rect x="728" y="512" width="42" height="24" rx="4"/>
-    <rect x="908" y="530" width="36" height="22" rx="4"/>
-    <rect x="1120" y="405" width="44" height="24" rx="4"/>
-    <rect x="1211" y="486" width="44" height="24" rx="4"/>
-    <rect x="1391" y="552" width="38" height="22" rx="4"/>
+  <g fill="#60a5fa" opacity="0.36">
+    <rect x="247" y="636" width="32" height="18" rx="4"/>
+    <rect x="310" y="698" width="32" height="18" rx="4"/>
+    <rect x="705" y="615" width="38" height="20" rx="4"/>
+    <rect x="770" y="690" width="38" height="20" rx="4"/>
+    <rect x="1190" y="595" width="38" height="20" rx="4"/>
+    <rect x="1265" y="670" width="38" height="20" rx="4"/>
+    <rect x="1450" y="690" width="34" height="18" rx="4"/>
   </g>
-  <rect y="670" width="1600" height="230" fill="#020817" opacity="0.68"/>
-  <path d="M0 674c225 55 463 65 714 31 321-43 561-17 886 39v156H0Z" fill="#030712"/>
+  <rect y="720" width="1600" height="180" fill="#020817" opacity="0.56"/>
+  <path d="M0 772c340-36 616-28 828 8 288 49 514 43 772-18v138H0Z" fill="#01030a" opacity="0.72"/>
 </svg>

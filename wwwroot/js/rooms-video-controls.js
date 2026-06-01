@@ -5,11 +5,11 @@
     const backgroundConfigs = {
         "none": { label: "Original", type: "none" },
         "blur": { label: "Soft blur", type: "blur" },
-        "blue-studio": { label: "Blue studio", type: "image", src: "backgrounds/blue-studio.svg" },
-        "city-night": { label: "City night", type: "image", src: "backgrounds/city-night.svg" },
-        "ocean-glass": { label: "Ocean glass", type: "image", src: "backgrounds/ocean-glass.svg" },
-        "focus-room": { label: "Focus room", type: "image", src: "backgrounds/focus-room.svg" },
-        "aurora-grid": { label: "Aurora grid", type: "image", src: "backgrounds/aurora-grid.svg" }
+        "blue-studio": { label: "Blue studio", type: "image", src: "backgrounds/blue-studio.svg?v=20260601-panel-bg-fix" },
+        "city-night": { label: "City night", type: "image", src: "backgrounds/city-night.svg?v=20260601-panel-bg-fix" },
+        "ocean-glass": { label: "Ocean glass", type: "image", src: "backgrounds/ocean-glass.svg?v=20260601-panel-bg-fix" },
+        "focus-room": { label: "Focus room", type: "image", src: "backgrounds/focus-room.svg?v=20260601-panel-bg-fix" },
+        "aurora-grid": { label: "Aurora grid", type: "image", src: "backgrounds/aurora-grid.svg?v=20260601-panel-bg-fix" }
     };
     const supportedVideoEffects = Object.keys(backgroundConfigs);
     const loadedBackgrounds = new Map();
