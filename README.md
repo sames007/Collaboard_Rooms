@@ -73,6 +73,13 @@ https://collaboard-rooms.onrender.com/index.html#room=resume-demo
 
 If the Render service has been idle, the first load can take 30-60 seconds while the free instance wakes up.
 
+## Troubleshooting
+
+- If chat looks unavailable, use the top-right panel button to open the collaboration panel, then select the Chat tab.
+- If a message does not send, wait until the room status changes to `Connected`, then try again.
+- If virtual backgrounds do not start, make sure the browser has camera permission. MediaPipe needs an active camera track before it can replace the background.
+- If the camera permission was blocked, reset the browser permission for the site, refresh the room, and join again.
+
 ## Free Deployment Plan
 
 Recommended free stack:

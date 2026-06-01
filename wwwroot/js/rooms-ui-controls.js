@@ -4,10 +4,12 @@
     const resizeHandle = document.getElementById("panelResizeHandle");
     const backgroundMenu = document.getElementById("backgroundMenu");
     const backgroundButton = document.getElementById("virtualBackgroundButton");
+    const appToast = document.getElementById("appToast");
 
     let isResizing = false;
     let startX = 0;
     let startWidth = 0;
+    let toastTimer = 0;
 
     bindClick("menuToggle", toggleDropdownPanel);
     bindClick("chatTab", () => showPanel("chat"));
@@ -68,6 +70,7 @@
 
         menuButton?.setAttribute("aria-label", isOpen ? "Close collaboration panel" : "Open collaboration panel");
         menuButton?.setAttribute("title", isOpen ? "Close panel" : "Open panel");
+        dropdownPanel.setAttribute("aria-hidden", String(!isOpen));
     }
 
     function showPanel(panel) {
@@ -125,7 +128,25 @@
         });
     }
 
+    function notify(message, isError = false) {
+        if (!appToast) {
+            app.appendSystemMessage?.(message);
+            return;
+        }
+
+        window.clearTimeout(toastTimer);
+        appToast.textContent = message;
+        appToast.classList.toggle("is-error", isError);
+        appToast.hidden = false;
+        toastTimer = window.setTimeout(() => {
+            appToast.hidden = true;
+        }, 4500);
+    }
+
+    dropdownPanel.setAttribute("aria-hidden", "true");
+
     app.toggleDropdownPanel = toggleDropdownPanel;
     app.showPanel = showPanel;
     app.closeBackgroundMenu = closeBackgroundMenu;
+    app.notify = notify;
 })();

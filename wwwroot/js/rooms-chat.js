@@ -39,6 +39,7 @@
 
         const connection = app.state.connection;
         if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
+            app.notify?.("Chat is still connecting. Try again in a moment.", true);
             app.appendSystemMessage("Chat is still connecting. Try again in a moment.");
             return;
         }
@@ -48,6 +49,7 @@
             chatInput.value = "";
         } catch (error) {
             console.error("Unable to send chat message.", error);
+            app.notify?.("Message was not sent. Please try again.", true);
             app.appendSystemMessage("Message was not sent. Please try again.");
         }
     }

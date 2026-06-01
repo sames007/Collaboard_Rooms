@@ -57,6 +57,7 @@
                 return rawLocalStream;
             } catch (audioError) {
                 console.warn("Audio-only request failed.", audioError);
+                app.notify?.("Camera and microphone are unavailable. You can still use chat.", true);
                 app.appendSystemMessage?.("Camera and microphone are unavailable. You can still use chat.");
                 rawLocalStream = new MediaStream();
                 return rawLocalStream;
@@ -137,6 +138,7 @@
         const selectedEffect = normalizeVideoEffect(effect);
 
         if (selectedEffect !== "none" && !getRawVideoTrack()) {
+            app.notify?.("Allow camera access before choosing a virtual background.", true);
             app.appendSystemMessage?.("No camera track is available for MediaPipe background replacement.");
             return;
         }
@@ -148,9 +150,11 @@
             if (currentVideoEffect === "none") {
                 await stopVirtualBackgroundProcessor(true);
             } else if (isScreenSharing) {
+                app.notify?.("Background changes will apply when screen sharing stops.");
                 app.appendSystemMessage?.("Background changes will apply when screen sharing stops.");
             } else {
                 await startOrUpdateVirtualBackground(currentVideoEffect);
+                app.notify?.(`Background set to ${backgroundConfigs[currentVideoEffect].label}.`);
             }
 
             updateBackgroundControl();
@@ -158,6 +162,7 @@
             await invokeHub("SetVideoEffect", currentVideoEffect);
         } catch (error) {
             console.error("Unable to apply MediaPipe background.", error);
+            app.notify?.("MediaPipe background replacement could not start. Try Chrome or Edge with camera access enabled.", true);
             app.appendSystemMessage?.("MediaPipe background replacement could not start. Try Chrome or Edge with camera access enabled.");
             currentVideoEffect = "none";
             app.state.peerEffects?.set(app.state.peerId, currentVideoEffect);
@@ -430,6 +435,7 @@
             } catch (error) {
                 if (!segmentationErrorShown) {
                     console.warn("MediaPipe frame processing failed.", error);
+                    app.notify?.("MediaPipe background processing paused. Try changing backgrounds or refreshing.", true);
                     app.appendSystemMessage?.("MediaPipe background processing paused. Try changing backgrounds or refreshing.");
                     segmentationErrorShown = true;
                 }

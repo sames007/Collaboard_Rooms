@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.StaticFiles;
 using CollaboardRooms.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,6 +24,11 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 
 var app = builder.Build();
+var staticFileContentTypes = new FileExtensionContentTypeProvider();
+
+staticFileContentTypes.Mappings[".binarypb"] = "application/octet-stream";
+staticFileContentTypes.Mappings[".data"] = "application/octet-stream";
+staticFileContentTypes.Mappings[".tflite"] = "application/octet-stream";
 
 app.UseForwardedHeaders();
 
@@ -61,7 +67,10 @@ app.Use(async (context, next) =>
 });
 
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = staticFileContentTypes
+});
 
 app.MapGet("/healthz", () => Results.Ok("ok"));
 app.MapHub<ChatHub>("/chatHub");
