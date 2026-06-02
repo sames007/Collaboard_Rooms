@@ -278,9 +278,9 @@
         recIndicator.className = "rec-indicator";
 
         badgeStack.className = "video-badge-stack";
-        badgeStack.append(backgroundBadge, handBadge);
+        badgeStack.append(handBadge);
 
-        container.append(video, cameraOff, emptyState, badgeStack, recIndicator, label);
+        container.append(video, cameraOff, emptyState, badgeStack, backgroundBadge, recIndicator, label);
         videoGrid.appendChild(container);
 
         const hasVideo = stream?.getVideoTracks().length > 0;
